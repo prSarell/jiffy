@@ -93,7 +93,7 @@
       display: flex;
       flex-direction: column;
     }
-    .pb-details, .prompts-header {
+    .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
       padding: 6px;
       border-radius: 5px;
@@ -101,9 +101,15 @@
       font-size: 0.8rem;
       color: #ccc;
     }
+    .pb-details {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 10px;
+      justify-content: space-between;
+    }
     .pb-details div {
-      flex: 1 1 45%;
-      text-align: center;
+      flex: 0 0 auto;
+      text-align: left;
     }
     .pb-controls {
       display: flex;
@@ -111,7 +117,7 @@
       margin-bottom: 12px;
       gap: 6px;
     }
-    .pb-controls button, .prompts-header button {
+    .pb-controls button, .prompts-header button, .rewards-header button {
       background-color: #444;
       color: #fff;
       border: none;
@@ -121,7 +127,7 @@
       font-size: 0.85rem;
       touch-action: manipulation;
     }
-    .pb-controls button:hover, .prompts-header button:hover {
+    .pb-controls button:hover, .prompts-header button:hover, .rewards-header button:hover {
       background-color: #555;
     }
     .pb-timer {
@@ -146,7 +152,7 @@
       font-weight: bold;
     }
     .timer-circle {
-      transform: rotate(-90deg);
+      transform: rotate(90deg);
     }
     .timer-circle-bg {
       fill: none;
@@ -159,6 +165,9 @@
       stroke-width: 8;
       stroke-linecap: round;
       transition: stroke-dashoffset 1s linear;
+    }
+    .timer-circle-progress.overdue {
+      stroke: #d9534f;
     }
     .task-header {
       margin-bottom: 12px;
@@ -177,12 +186,12 @@
       display: flex;
       flex-direction: column;
     }
-    .task-header label, .prompts-header label {
+    .task-header label, .prompts-header label, .rewards-header label {
       font-size: 0.75rem;
       margin-bottom: 2px;
       color: #ccc;
     }
-    .task-header input, .prompts-header input {
+    .task-header input, .prompts-header input, .rewards-header input {
       padding: 3px;
       font-size: 0.75rem;
       border: 1px solid #555;
@@ -205,27 +214,27 @@
       background-color: #222;
       color: #fff;
     }
-    .prompts-header {
+    .prompts-header, .rewards-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .prompts-list {
+    .prompts-list, .rewards-list {
       flex: 1;
       overflow-y: auto;
     }
-    .prompt-item {
+    .prompt-item, .reward-item {
       display: flex;
       align-items: center;
       padding: 6px;
       border-bottom: 1px solid #555;
     }
-    .prompt-item span {
+    .prompt-item span, .reward-item span {
       flex: 1;
       font-size: 0.9rem;
       cursor: pointer;
     }
-    .prompt-item input[type="text"] {
+    .prompt-item input[type="text"], .reward-item input[type="text"] {
       flex: 1;
       padding: 3px;
       font-size: 0.9rem;
@@ -242,7 +251,7 @@
       color: #ccc;
       margin-right: 10px;
     }
-    .prompt-item button {
+    .prompt-item button, .reward-item button {
       background-color: #555;
       color: #fff;
       border: none;
@@ -251,11 +260,63 @@
       cursor: pointer;
       font-size: 0.75rem;
     }
-    .prompt-item button:hover {
+    .prompt-item button:hover, .reward-item button:hover {
       background-color: #666;
     }
     .prompt-item.important span {
       color: #28a745;
+    }
+    /* Confirmation Dialog Styles */
+    .confirmation-dialog {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .confirmation-dialog.active {
+      display: flex;
+    }
+    .confirmation-box {
+      background-color: #333;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: center;
+      color: #fff;
+      max-width: 300px;
+      width: 80%;
+    }
+    .confirmation-box p {
+      margin: 0 0 20px 0;
+      font-size: 1rem;
+    }
+    .confirmation-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .confirmation-buttons button {
+      background-color: #444;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .confirmation-buttons button:hover {
+      background-color: #555;
+    }
+    .confirmation-buttons .yes-btn {
+      background-color: #d9534f;
+    }
+    .confirmation-buttons .yes-btn:hover {
+      background-color: #c9302c;
     }
     @media (max-width: 393px) {
       body {
@@ -287,11 +348,15 @@
       .tab-content {
         padding: 8px;
       }
-      .pb-details, .prompts-header {
+      .pb-details, .prompts-header, .rewards-header {
         font-size: 0.75rem;
         gap: 5px;
       }
-      .pb-controls button, .prompts-header button {
+      .pb-details {
+        flex-wrap: nowrap;
+        gap: 5px;
+      }
+      .pb-controls button, .prompts-header button, .rewards-header button {
         padding: 5px 10px;
         font-size: 0.8rem;
       }
@@ -302,13 +367,13 @@
       .timer-display {
         font-size: 1.4rem;
       }
-      .task-header, .prompts-header {
+      .task-header, .prompts-header, .rewards-header {
         padding: 6px;
       }
       .task-header .fields {
         gap: 2px;
       }
-      .task-header input, .prompts-header input {
+      .task-header input, .prompts-header input, .rewards-header input {
         font-size: 0.7rem;
         padding: 2px;
         width: 75px;
@@ -318,26 +383,47 @@
         font-size: 0.8rem;
         padding: 5px;
       }
-      .prompt-item {
+      .prompt-item, .reward-item {
         padding: 5px;
       }
-      .prompt-item span {
+      .prompt-item span, .reward-item span {
         font-size: 0.85rem;
       }
-      .prompt-item input[type="text"] {
+      .prompt-item input[type="text"], .reward-item input[type="text"] {
         font-size: 0.85rem;
       }
       .prompt-item label {
         font-size: 0.7rem;
       }
-      .prompt-item button {
+      .prompt-item button, .reward-item button {
         padding: 3px 6px;
         font-size: 0.7rem;
+      }
+      .confirmation-box {
+        padding: 15px;
+      }
+      .confirmation-box p {
+        font-size: 0.9rem;
+      }
+      .confirmation-buttons button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
       }
     }
   </style>
 </head>
 <body>
+  <!-- Confirmation Dialog -->
+  <div class="confirmation-dialog" id="confirmationDialog">
+    <div class="confirmation-box">
+      <p id="confirmationMessage"></p>
+      <div class="confirmation-buttons">
+        <button class="yes-btn" onclick="confirmDeleteCategory(true)">Yes</button>
+        <button onclick="confirmDeleteCategory(false)">No</button>
+      </div>
+    </div>
+  </div>
+
   <div class="header">
     <div class="category-container">
       <button onclick="removeCategory()">-</button>
@@ -348,10 +434,10 @@
   <div class="tabs">
     <div class="tab" onclick="showTab('tasks')">Tasks</div>
     <div class="tab" onclick="showTab('pb')">Pomo</div>
-    <div class="tab active" onclick="showTab('prompts')">Prompts</div>
+    <div class="tab" onclick="showTab('prompts')">Prompts</div>
     <div class="tab" onclick="showTab('note-pad')">Note Pad</div>
     <div class="tab" onclick="showTab('summary')">Summary</div>
-    <div class="tab" onclick="showTab('rewards')">Rewards</div>
+    <div class="tab active" onclick="showTab('rewards')">Rewards</div>
   </div>
   <div id="tasks" class="tab-content">
     <div class="task-header">
@@ -384,8 +470,8 @@
       <div>Time: <span id="pb-time"></span></div>
     </div>
     <div class="pb-controls">
-      <button onclick="startTimer()">Start</button>
-      <button onclick="toggleTimer()">Pause</button>
+      <button id="start-pause-btn" onclick="toggleStartPause()">Start</button>
+      <button onclick="completeTimer()">Complete</button>
       <button onclick="resetTimer()">Reset</button>
     </div>
     <div class="pb-timer">
@@ -398,7 +484,7 @@
       </div>
     </div>
   </div>
-  <div id="prompts" class="tab-content active">
+  <div id="prompts" class="tab-content">
     <div class="prompts-header">
       <div>
         <label for="refresh-interval">Refresh Interval (MM:SS)</label>
@@ -439,8 +525,104 @@
   <div id="summary" class="tab-content">
     <p>Summary tab (placeholder)</p>
   </div>
-  <div id="rewards" class="tab-content">
-    <p>Rewards tab (placeholder)</p>
+  <div id="rewards" class="tab-content active">
+    <div class="rewards-header">
+      <div>
+        <label for="rewards-refresh-interval">Refresh Interval (MM:SS)</label>
+        <input id="rewards-refresh-interval" type="text" value="00:10">
+      </div>
+      <button onclick="showAddRewardInput()">Add Reward</button>
+    </div>
+    <div class="rewards-list" id="rewards-list">
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Great job, you smashed it!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">You're killing it!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Fantastic work!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">On fire</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Yeah Bouy!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Fernsteuerung!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Way to go, superstar!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Crushing it!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Nailed it!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Bravo, that was amazing!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Impressive work, well done!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Smashing work Gromit!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Superb effort, keep shining!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">You're unstoppable!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">What a triumph!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Amazing job, keep up the great work!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Incredible, you're a rockstar!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Sensational performance!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Your productivity is inspiring!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">Mike, you F*cken LEGEND!!!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">They said you'd never make it, but you finally came through!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+      <div class="reward-item">
+        <span ondblclick="editReward(this)">You’re a wizard Harry!</span>
+        <button onclick="deleteReward(this)">Delete</button>
+      </div>
+    </div>
   </div>
   <script>
     let timer = {
@@ -452,6 +634,7 @@
     };
     let categories = ['Home', 'Life', 'Work', 'School', 'Music Practice'];
     let currentCategoryIndex = 4;
+    let pendingDeleteIndex = null;
 
     // Swipe functionality to switch between categories
     let touchStartX = 0;
@@ -512,52 +695,32 @@
     }
 
     function removeCategory() {
-      // Removes the currently active (visible) category
+      // Show confirmation dialog before deleting the currently active (visible) category
       if (categories.length <= 1) {
         alert('Cannot remove the last category. At least one category is required.');
         return;
       }
-      categories.splice(currentCategoryIndex, 1);
-      currentCategoryIndex = Math.min(currentCategoryIndex, categories.length - 1);
-      if (categories.length === 0) {
-        categories = ['Default'];
-        currentCategoryIndex = 0;
-      }
-      document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+      pendingDeleteIndex = currentCategoryIndex;
+      const categoryName = categories[currentCategoryIndex];
+      const dialog = document.getElementById('confirmationDialog');
+      const message = document.getElementById('confirmationMessage');
+      message.textContent = `Are you sure you want to delete '${categoryName}'?`;
+      dialog.classList.add('active');
     }
 
-    function editPrompt(span) {
-      const promptItem = span.parentElement;
-      const currentText = span.textContent;
-      const isImportant = promptItem.classList.contains('important');
-      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
-      promptItem.innerHTML = `
-        <input type="text" value="${currentText}" onblur="savePromptEdit(this)" onkeypress="if(event.key === 'Enter') savePromptEdit(this)">
-        <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
-        <label for="${checkboxId}">Important</label>
-        <button onclick="deletePrompt(this)">Delete</button>
-      `;
-      promptItem.querySelector('input[type="text"]').focus();
-    }
-
-    function savePromptEdit(input) {
-      const promptItem = input.parentElement;
-      const newText = input.value.trim();
-      const isImportant = promptItem.classList.contains('important');
-      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
-      if (newText) {
-        promptItem.innerHTML = `
-          <span ondblclick="editPrompt(this)">${newText}</span>
-          <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
-          <label for="${checkboxId}">Important</label>
-          <button onclick="deletePrompt(this)">Delete</button>
-        `;
-        if (isImportant) {
-          promptItem.classList.add('important');
+    function confirmDeleteCategory(confirm) {
+      const dialog = document.getElementById('confirmationDialog');
+      dialog.classList.remove('active');
+      if (confirm && pendingDeleteIndex !== null) {
+        categories.splice(pendingDeleteIndex, 1);
+        currentCategoryIndex = Math.min(pendingDeleteIndex, categories.length - 1);
+        if (categories.length === 0) {
+          categories = ['Default'];
+          currentCategoryIndex = 0;
         }
-      } else {
-        promptItem.remove();
+        document.getElementById('category-header').textContent = categories[currentCategoryIndex];
       }
+      pendingDeleteIndex = null;
     }
 
     function parseTimeInput(input) {
@@ -607,8 +770,9 @@
       document.getElementById('pb-time').textContent = document.getElementById('task-time').value || 'N/A';
     }
 
-    function startTimer() {
+    function toggleStartPause() {
       if (!timer.isRunning) {
+        // Start the timer
         timer.totalSeconds = parseTimeInput(document.getElementById('task-time').value);
         if (timer.totalSeconds <= 0) {
           alert('Please enter a valid time in the Tasks tab (e.g., "1:30:00" or "30 min").');
@@ -618,29 +782,29 @@
         timer.isRunning = true;
         timer.isPaused = false;
         timer.interval = setInterval(() => {
-          if (!timer.isPaused && timer.seconds > 0) {
+          if (!timer.isPaused) {
             timer.seconds--;
             updateTimerDisplay();
             updateCircleProgress();
           }
-          if (timer.seconds === 0 && timer.isRunning) {
-            clearInterval(timer.interval);
-            timer.isRunning = false;
-            timer.interval = null;
-            updateTimerDisplay();
-            updateCircleProgress();
-            alert('Timer finished!');
-          }
         }, 1000);
-        document.querySelector('.pb-controls button[onclick="toggleTimer()"]').textContent = 'Pause';
+        document.getElementById('start-pause-btn').textContent = 'Pause';
+      } else {
+        // Pause or resume the timer
+        timer.isPaused = !timer.isPaused;
+        document.getElementById('start-pause-btn').textContent = timer.isPaused ? 'Resume' : 'Pause';
       }
     }
 
-    function toggleTimer() {
-      if (timer.isRunning) {
-        timer.isPaused = !timer.isPaused;
-        document.querySelector('.pb-controls button[onclick="toggleTimer()"]').textContent = timer.isPaused ? 'Resume' : 'Pause';
-      }
+    function completeTimer() {
+      clearInterval(timer.interval);
+      timer.isRunning = false;
+      timer.isPaused = false;
+      timer.seconds = timer.totalSeconds;
+      timer.interval = null;
+      updateTimerDisplay();
+      updateCircleProgress();
+      document.getElementById('start-pause-btn').textContent = 'Start';
     }
 
     function resetTimer() {
@@ -652,22 +816,29 @@
       timer.interval = null;
       updateTimerDisplay();
       updateCircleProgress();
-      document.querySelector('.pb-controls button[onclick="toggleTimer()"]').textContent = 'Pause';
+      document.getElementById('start-pause-btn').textContent = 'Start';
     }
 
     function updateTimerDisplay() {
-      const hours = Math.floor(timer.seconds / 3600);
-      const minutes = Math.floor((timer.seconds % 3600) / 60);
-      const seconds = timer.seconds % 60;
-      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      const absSeconds = Math.abs(timer.seconds);
+      const hours = Math.floor(absSeconds / 3600);
+      const minutes = Math.floor((absSeconds % 3600) / 60);
+      const seconds = absSeconds % 60;
+      const timeStr = `${timer.seconds < 0 ? '-' : ''}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       document.getElementById('pb-timer').textContent = timeStr;
     }
 
     function updateCircleProgress() {
       const circle = document.getElementById('timer-circle-progress');
       const circumference = 596.9;
-      const progress = timer.totalSeconds ? timer.seconds / timer.totalSeconds : 1;
-      const offset = circumference * (1 - progress);
+      let progress = timer.totalSeconds ? timer.seconds / timer.totalSeconds : 1;
+      if (progress < 0) {
+        progress = 0;
+        circle.classList.add('overdue');
+      } else {
+        circle.classList.remove('overdue');
+      }
+      const offset = -circumference * (1 - progress);
       circle.setAttribute('stroke-dashoffset', offset);
     }
 
@@ -685,6 +856,7 @@
     }
 
     let promptCounter = 4;
+    let rewardCounter = 22; // Start after the initial 22 rewards
 
     function showAddPromptInput() {
       const list = document.getElementById('prompts-list');
@@ -715,6 +887,40 @@
       }
     }
 
+    function editPrompt(span) {
+      const promptItem = span.parentElement;
+      const currentText = span.textContent;
+      const isImportant = promptItem.classList.contains('important');
+      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+      promptItem.innerHTML = `
+        <input type="text" value="${currentText}" onblur="savePromptEdit(this)" onkeypress="if(event.key === 'Enter') savePromptEdit(this)">
+        <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+        <label for="${checkboxId}">Important</label>
+        <button onclick="deletePrompt(this)">Delete</button>
+      `;
+      promptItem.querySelector('input[type="text"]').focus();
+    }
+
+    function savePromptEdit(input) {
+      const promptItem = input.parentElement;
+      const newText = input.value.trim();
+      const isImportant = promptItem.classList.contains('important');
+      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+      if (newText) {
+        promptItem.innerHTML = `
+          <span ondblclick="editPrompt(this)">${newText}</span>
+          <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+          <label for="${checkboxId}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        if (isImportant) {
+          promptItem.classList.add('important');
+        }
+      } else {
+        promptItem.remove();
+      }
+    }
+
     function toggleImportant(checkbox) {
       const promptItem = checkbox.parentElement;
       if (checkbox.checked) {
@@ -728,10 +934,71 @@
       button.parentElement.remove();
     }
 
+    // Rewards Tab Functions
+    function showAddRewardInput() {
+      const list = document.getElementById('rewards-list');
+      const inputDiv = document.createElement('div');
+      inputDiv.className = 'reward-item';
+      inputDiv.innerHTML = `
+        <input type="text" placeholder="Enter new reward..." onblur="addReward(this)" onkeypress="if(event.key === 'Enter') addReward(this)">
+      `;
+      list.insertBefore(inputDiv, list.firstChild);
+      inputDiv.querySelector('input').focus();
+    }
+
+    function addReward(input) {
+      const text = input.value.trim();
+      if (text) {
+        rewardCounter++;
+        const rewardDiv = document.createElement('div');
+        rewardDiv.className = 'reward-item';
+        rewardDiv.innerHTML = `
+          <span ondblclick="editReward(this)">${text}</span>
+          <button onclick="deleteReward(this)">Delete</button>
+        `;
+        input.parentElement.replaceWith(rewardDiv);
+      } else {
+        input.parentElement.remove();
+      }
+    }
+
+    function editReward(span) {
+      const rewardItem = span.parentElement;
+      const currentText = span.textContent;
+      rewardItem.innerHTML = `
+        <input type="text" value="${currentText}" onblur="saveRewardEdit(this)" onkeypress="if(event.key === 'Enter') saveRewardEdit(this)">
+        <button onclick="deleteReward(this)">Delete</button>
+      `;
+      rewardItem.querySelector('input[type="text"]').focus();
+    }
+
+    function saveRewardEdit(input) {
+      const rewardItem = input.parentElement;
+      const newText = input.value.trim();
+      if (newText) {
+        rewardItem.innerHTML = `
+          <span ondblclick="editReward(this)">${newText}</span>
+          <button onclick="deleteReward(this)">Delete</button>
+        `;
+      } else {
+        rewardItem.remove();
+      }
+    }
+
+    function deleteReward(button) {
+      button.parentElement.remove();
+    }
+
+    // Ensure the confirmation dialog is hidden on page load
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('date').value = formatDate();
       resetTimer();
       document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+      // Explicitly hide the confirmation dialog
+      const dialog = document.getElementById('confirmationDialog');
+      if (dialog) {
+        dialog.classList.remove('active');
+      }
     });
   </script>
 </body>
