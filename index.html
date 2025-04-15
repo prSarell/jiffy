@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Music Practice</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,30 +11,37 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
       background-color: #f0f0f0;
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
+      font-size: 16px; /* Base font size for iPhone 14 */
     }
     .header {
       text-align: center;
-      padding: 10px;
+      padding: 12px;
       background-color: #333;
       color: #fff;
+      font-size: 1.2rem;
     }
     .tabs {
       display: flex;
-      justify-content: space-around;
       background-color: #444;
-      padding: 10px 0;
+      padding: 8px 0;
       overflow-x: auto;
       white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
     }
     .tab {
-      padding: 10px 15px;
+      padding: 8px 12px;
       cursor: pointer;
       color: #ccc;
+      font-size: 0.9rem;
+      flex: 1;
+      text-align: center;
+      min-width: 60px;
     }
     .tab.active {
       color: #fff;
@@ -42,7 +49,7 @@
     }
     .tab-content {
       display: none;
-      padding: 15px;
+      padding: 12px;
       flex: 1;
       overflow-y: auto;
     }
@@ -52,31 +59,33 @@
     }
     .pb-details {
       background-color: #ddd;
-      padding: 10px;
+      padding: 8px;
       border-radius: 5px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.85rem;
     }
     .pb-details div {
-      font-size: 14px;
-      flex: 1;
+      flex: 1 1 45%;
       text-align: center;
     }
     .pb-controls {
       display: flex;
       justify-content: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+      gap: 8px;
     }
     .pb-controls button {
       background-color: #555;
       color: #fff;
       border: none;
-      padding: 10px 20px;
+      padding: 8px 16px;
       cursor: pointer;
-      margin: 0 5px;
-      border-radius: 3px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      touch-action: manipulation;
     }
     .pb-controls button:hover {
       background-color: #666;
@@ -90,15 +99,15 @@
     }
     .timer-container {
       position: relative;
-      width: 200px;
-      height: 200px;
+      width: 160px; /* Reduced for smaller screens */
+      height: 160px;
     }
     .timer-display {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 36px;
+      font-size: 1.8rem;
       color: #333;
       font-weight: bold;
     }
@@ -108,56 +117,110 @@
     .timer-circle-bg {
       fill: none;
       stroke: #ddd;
-      stroke-width: 10;
+      stroke-width: 8;
     }
     .timer-circle-progress {
       fill: none;
       stroke: #28a745;
-      stroke-width: 10;
+      stroke-width: 8;
       stroke-linecap: round;
       transition: stroke-dashoffset 1s linear;
     }
     .task-header {
-      margin-bottom: 20px;
-      padding: 15px;
+      margin-bottom: 16px;
+      padding: 12px;
       background-color: #ddd;
       border-radius: 5px;
     }
     .task-header h3 {
       text-align: center;
-      margin: 0 0 10px 0;
-      padding-bottom: 10px;
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
     }
     .task-header .fields {
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     .task-header .field {
-      flex: 1;
+      flex: 1 1 45%;
       display: flex;
       flex-direction: column;
     }
     .task-header label {
-      font-size: 14px;
-      margin-bottom: 5px;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
     }
     .task-header input {
-      padding: 8px;
-      font-size: 14px;
+      padding: 6px;
+      font-size: 0.85rem;
       border: 1px solid #ccc;
       border-radius: 3px;
       box-sizing: border-box;
+      width: 100%;
     }
     textarea {
       flex: 1;
       width: 100%;
-      padding: 10px;
-      font-size: 16px;
+      padding: 8px;
+      font-size: 0.9rem;
       border: 1px solid #ccc;
+      border-radius: 3px;
       resize: none;
       box-sizing: border-box;
       background-color: #fff;
+    }
+    @media (max-width: 393px) { /* iPhone 14 dimensions */
+      body {
+        font-size: 14px;
+      }
+      .header {
+        padding: 10px;
+        font-size: 1.1rem;
+      }
+      .tabs {
+        padding: 6px 0;
+      }
+      .tab {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+        min-width: 50px;
+      }
+      .tab-content {
+        padding: 10px;
+      }
+      .pb-details {
+        font-size: 0.8rem;
+        gap: 6px;
+      }
+      .pb-controls button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
+      .timer-container {
+        width: 140px;
+        height: 140px;
+      }
+      .timer-display {
+        font-size: 1.6rem;
+      }
+      .task-header {
+        padding: 10px;
+      }
+      .task-header h3 {
+        font-size: 1rem;
+      }
+      .task-header .field {
+        flex: 1 1 100%; /* Stack fields on very small screens */
+      }
+      .task-header input {
+        font-size: 0.8rem;
+        padding: 5px;
+      }
+      textarea {
+        font-size: 0.8rem;
+        padding: 6px;
+      }
     }
   </style>
 </head>
@@ -209,7 +272,7 @@
     </div>
     <div class="pb-timer">
       <div class="timer-container">
-        <svg width="200" height="200" class="timer-circle">
+        <svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" class="timer-circle">
           <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
           <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
         </svg>
@@ -241,7 +304,6 @@
     function parseTimeInput(input) {
       if (!input) return 0;
       input = input.trim().toLowerCase();
-      // Handle formats: "1:30:00", "30 min", "90 seconds", "1 hour", "45"
       if (input.includes(':')) {
         const parts = input.split(':').map(n => parseInt(n));
         let hours = 0, minutes = 0, seconds = 0;
@@ -264,7 +326,7 @@
         return isNaN(num) ? 0 : num;
       } else {
         const num = parseInt(input);
-        return isNaN(num) ? 0 : num * 60; // Assume minutes if just a number
+        return isNaN(num) ? 0 : num * 60;
       }
     }
 
@@ -344,13 +406,12 @@
 
     function updateCircleProgress() {
       const circle = document.getElementById('timer-circle-progress');
-      const circumference = 596.9; // 2 * π * radius (95)
+      const circumference = 596.9;
       const progress = timer.totalSeconds ? timer.seconds / timer.totalSeconds : 1;
       const offset = circumference * (1 - progress);
       circle.setAttribute('stroke-dashoffset', offset);
     }
 
-    // Function to format date like "April 15th"
     function formatDate() {
       const date = new Date();
       const monthNames = [
@@ -364,7 +425,6 @@
       return `${monthNames[date.getMonth()]} ${day}${suffix}`;
     }
 
-    // Set date and timer on page load
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('date').value = formatDate();
       resetTimer();
