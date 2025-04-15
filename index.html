@@ -17,7 +17,7 @@
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
-      font-size: 16px; /* Base font size for iPhone 14 */
+      font-size: 16px;
     }
     .header {
       text-align: center;
@@ -99,7 +99,7 @@
     }
     .timer-container {
       position: relative;
-      width: 160px; /* Reduced for smaller screens */
+      width: 160px;
       height: 160px;
     }
     .timer-display {
@@ -132,32 +132,29 @@
       background-color: #ddd;
       border-radius: 5px;
     }
-    .task-header h3 {
-      text-align: center;
-      margin: 0 0 8px 0;
-      font-size: 1.1rem;
-    }
     .task-header .fields {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      flex-wrap: nowrap; /* Prevent wrapping */
+      gap: 4px; /* Reduced gap */
+      justify-content: space-between;
     }
     .task-header .field {
-      flex: 1 1 45%;
+      flex: 0 0 auto; /* Prevent growing/shrinking */
       display: flex;
       flex-direction: column;
     }
     .task-header label {
-      font-size: 0.85rem;
-      margin-bottom: 4px;
+      font-size: 0.8rem;
+      margin-bottom: 3px;
     }
     .task-header input {
-      padding: 6px;
-      font-size: 0.85rem;
+      padding: 4px;
+      font-size: 0.8rem;
       border: 1px solid #ccc;
       border-radius: 3px;
       box-sizing: border-box;
-      width: 100%;
+      width: 85px; /* Approx 14 chars at 0.8rem font (~6px per char) */
+      height: 26px;
     }
     textarea {
       flex: 1;
@@ -170,7 +167,7 @@
       box-sizing: border-box;
       background-color: #fff;
     }
-    @media (max-width: 393px) { /* iPhone 14 dimensions */
+    @media (max-width: 393px) {
       body {
         font-size: 14px;
       }
@@ -207,15 +204,18 @@
       .task-header {
         padding: 10px;
       }
-      .task-header h3 {
-        font-size: 1rem;
+      .task-header .fields {
+        flex-wrap: nowrap;
+        gap: 3px; /* Further reduced gap */
       }
       .task-header .field {
-        flex: 1 1 100%; /* Stack fields on very small screens */
+        flex: 0 0 auto;
       }
       .task-header input {
-        font-size: 0.8rem;
-        padding: 5px;
+        font-size: 0.75rem;
+        padding: 3px;
+        width: 80px; /* Approx 14 chars at 0.75rem font (~5.7px per char) */
+        height: 24px;
       }
       textarea {
         font-size: 0.8rem;
@@ -236,7 +236,6 @@
   </div>
   <div id="tasks" class="tab-content active">
     <div class="task-header">
-      <h3>Practice Tasks</h3>
       <div class="fields">
         <div class="field">
           <label for="stage">Stage</label>
