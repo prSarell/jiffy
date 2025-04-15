@@ -3,45 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Music Practice</title>
+  <title>Executive Assistant</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Music Practice">
+  <meta name="apple-mobile-web-app-title" content="Executive Assistant">
   <link rel="apple-touch-icon" href="icon.png">
   <style>
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
-      background-color: #f0f0f0;
+      background-color: #1a1a1a;
       height: 100vh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
-      font-size: 16px;
+      font-size: 14px;
+      color: #fff;
     }
     .header {
-      text-align: center;
-      padding: 12px;
-      background-color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 15px;
+      background-color: #000;
       color: #fff;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    .header .category-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .header .category-name {
+      display: inline-block;
+      touch-action: pan-y;
+    }
+    .header .category-input {
+      padding: 3px;
+      font-size: 1rem;
+      border: 1px solid #555;
+      border-radius: 3px;
+      background-color: #444;
+      color: #fff;
+      width: 200px;
+    }
+    .header button {
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 1.5rem;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .header button:hover {
+      color: #fff;
     }
     .tabs {
       display: flex;
-      background-color: #444;
-      padding: 8px 0;
+      background-color: #000;
+      padding: 6px 0;
       overflow-x: auto;
       white-space: nowrap;
       -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid #333;
     }
     .tab {
-      padding: 8px 12px;
+      padding: 6px 10px;
       cursor: pointer;
-      color: #ccc;
-      font-size: 0.9rem;
+      color: #999;
+      font-size: 0.85rem;
       flex: 1;
       text-align: center;
-      min-width: 60px;
+      min-width: 55px;
+      transition: color 0.2s ease;
     }
     .tab.active {
       color: #fff;
@@ -49,23 +84,22 @@
     }
     .tab-content {
       display: none;
-      padding: 12px;
+      padding: 10px;
       flex: 1;
       overflow-y: auto;
+      background-color: #1a1a1a;
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
     }
-    .pb-details {
-      background-color: #ddd;
-      padding: 8px;
+    .pb-details, .prompts-header {
+      background-color: #333;
+      padding: 6px;
       border-radius: 5px;
       margin-bottom: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      color: #ccc;
     }
     .pb-details div {
       flex: 1 1 45%;
@@ -74,21 +108,21 @@
     .pb-controls {
       display: flex;
       justify-content: center;
-      margin-bottom: 16px;
-      gap: 8px;
+      margin-bottom: 12px;
+      gap: 6px;
     }
-    .pb-controls button {
-      background-color: #555;
+    .pb-controls button, .prompts-header button {
+      background-color: #444;
       color: #fff;
       border: none;
-      padding: 8px 16px;
+      padding: 6px 12px;
       cursor: pointer;
       border-radius: 5px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       touch-action: manipulation;
     }
-    .pb-controls button:hover {
-      background-color: #666;
+    .pb-controls button:hover, .prompts-header button:hover {
+      background-color: #555;
     }
     .pb-timer {
       display: flex;
@@ -99,16 +133,16 @@
     }
     .timer-container {
       position: relative;
-      width: 160px;
-      height: 160px;
+      width: 150px;
+      height: 150px;
     }
     .timer-display {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 1.8rem;
-      color: #333;
+      font-size: 1.6rem;
+      color: #fff;
       font-weight: bold;
     }
     .timer-circle {
@@ -116,7 +150,7 @@
     }
     .timer-circle-bg {
       fill: none;
-      stroke: #ddd;
+      stroke: #333;
       stroke-width: 8;
     }
     .timer-circle-progress {
@@ -127,114 +161,199 @@
       transition: stroke-dashoffset 1s linear;
     }
     .task-header {
-      margin-bottom: 16px;
-      padding: 12px;
-      background-color: #ddd;
+      margin-bottom: 12px;
+      padding: 8px;
+      background-color: #333;
       border-radius: 5px;
     }
     .task-header .fields {
       display: flex;
-      flex-wrap: nowrap; /* Prevent wrapping */
-      gap: 4px; /* Reduced gap */
+      flex-wrap: nowrap;
+      gap: 3px;
       justify-content: space-between;
     }
     .task-header .field {
-      flex: 0 0 auto; /* Prevent growing/shrinking */
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
     }
-    .task-header label {
-      font-size: 0.8rem;
-      margin-bottom: 3px;
+    .task-header label, .prompts-header label {
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+      color: #ccc;
     }
-    .task-header input {
-      padding: 4px;
-      font-size: 0.8rem;
-      border: 1px solid #ccc;
+    .task-header input, .prompts-header input {
+      padding: 3px;
+      font-size: 0.75rem;
+      border: 1px solid #555;
       border-radius: 3px;
       box-sizing: border-box;
-      width: 85px; /* Approx 14 chars at 0.8rem font (~6px per char) */
-      height: 26px;
+      width: 80px;
+      height: 24px;
+      background-color: #444;
+      color: #fff;
     }
     textarea {
       flex: 1;
       width: 100%;
-      padding: 8px;
-      font-size: 0.9rem;
-      border: 1px solid #ccc;
+      padding: 6px;
+      font-size: 0.85rem;
+      border: 1px solid #555;
       border-radius: 3px;
       resize: none;
       box-sizing: border-box;
-      background-color: #fff;
+      background-color: #222;
+      color: #fff;
+    }
+    .prompts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .prompts-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .prompt-item {
+      display: flex;
+      align-items: center;
+      padding: 6px;
+      border-bottom: 1px solid #555;
+    }
+    .prompt-item span {
+      flex: 1;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .prompt-item input[type="text"] {
+      flex: 1;
+      padding: 3px;
+      font-size: 0.9rem;
+      border: 1px solid #555;
+      border-radius: 3px;
+      background-color: #444;
+      color: #fff;
+    }
+    .prompt-item input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    .prompt-item label {
+      font-size: 0.75rem;
+      color: #ccc;
+      margin-right: 10px;
+    }
+    .prompt-item button {
+      background-color: #555;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+    .prompt-item button:hover {
+      background-color: #666;
+    }
+    .prompt-item.important span {
+      color: #28a745;
     }
     @media (max-width: 393px) {
       body {
-        font-size: 14px;
+        font-size: 13px;
       }
       .header {
-        padding: 10px;
-        font-size: 1.1rem;
+        padding: 8px 12px;
+        font-size: 1rem;
+      }
+      .header .category-container {
+        gap: 16px;
+      }
+      .header button {
+        font-size: 1.3rem;
+        padding: 4px 6px;
+      }
+      .header .category-input {
+        font-size: 0.9rem;
+        width: 160px;
       }
       .tabs {
-        padding: 6px 0;
+        padding: 5px 0;
       }
       .tab {
-        padding: 6px 8px;
+        padding: 5px 8px;
         font-size: 0.8rem;
         min-width: 50px;
       }
       .tab-content {
-        padding: 10px;
+        padding: 8px;
       }
-      .pb-details {
-        font-size: 0.8rem;
-        gap: 6px;
+      .pb-details, .prompts-header {
+        font-size: 0.75rem;
+        gap: 5px;
       }
-      .pb-controls button {
-        padding: 6px 12px;
+      .pb-controls button, .prompts-header button {
+        padding: 5px 10px;
         font-size: 0.8rem;
       }
       .timer-container {
-        width: 140px;
-        height: 140px;
+        width: 130px;
+        height: 130px;
       }
       .timer-display {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
       }
-      .task-header {
-        padding: 10px;
+      .task-header, .prompts-header {
+        padding: 6px;
       }
       .task-header .fields {
-        flex-wrap: nowrap;
-        gap: 3px; /* Further reduced gap */
+        gap: 2px;
       }
-      .task-header .field {
-        flex: 0 0 auto;
-      }
-      .task-header input {
-        font-size: 0.75rem;
-        padding: 3px;
-        width: 80px; /* Approx 14 chars at 0.75rem font (~5.7px per char) */
-        height: 24px;
+      .task-header input, .prompts-header input {
+        font-size: 0.7rem;
+        padding: 2px;
+        width: 75px;
+        height: 22px;
       }
       textarea {
         font-size: 0.8rem;
-        padding: 6px;
+        padding: 5px;
+      }
+      .prompt-item {
+        padding: 5px;
+      }
+      .prompt-item span {
+        font-size: 0.85rem;
+      }
+      .prompt-item input[type="text"] {
+        font-size: 0.85rem;
+      }
+      .prompt-item label {
+        font-size: 0.7rem;
+      }
+      .prompt-item button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
       }
     }
   </style>
 </head>
 <body>
-  <div class="header">Music Practice</div>
+  <div class="header">
+    <div class="category-container">
+      <button onclick="removeCategory()">-</button>
+      <span id="category-header" class="category-name">Music Practice</span>
+      <button onclick="addCategory()">+</button>
+    </div>
+  </div>
   <div class="tabs">
-    <div class="tab active" onclick="showTab('tasks')">Tasks</div>
-    <div class="tab" onclick="showTab('pb')">PB</div>
-    <div class="tab" onclick="showTab('prompts')">Prompts</div>
+    <div class="tab" onclick="showTab('tasks')">Tasks</div>
+    <div class="tab" onclick="showTab('pb')">Pomo</div>
+    <div class="tab active" onclick="showTab('prompts')">Prompts</div>
     <div class="tab" onclick="showTab('note-pad')">Note Pad</div>
     <div class="tab" onclick="showTab('summary')">Summary</div>
     <div class="tab" onclick="showTab('rewards')">Rewards</div>
   </div>
-  <div id="tasks" class="tab-content active">
+  <div id="tasks" class="tab-content">
     <div class="task-header">
       <div class="fields">
         <div class="field">
@@ -279,8 +398,40 @@
       </div>
     </div>
   </div>
-  <div id="prompts" class="tab-content">
-    <p>Prompts tab (placeholder)</p>
+  <div id="prompts" class="tab-content active">
+    <div class="prompts-header">
+      <div>
+        <label for="refresh-interval">Refresh Interval (MM:SS)</label>
+        <input id="refresh-interval" type="text" value="00:10">
+      </div>
+      <button onclick="showAddPromptInput()">Add Prompt</button>
+    </div>
+    <div class="prompts-list" id="prompts-list">
+      <div class="prompt-item important">
+        <span ondblclick="editPrompt(this)">PAY PARKING FINE!!!</span>
+        <input type="checkbox" id="important-1" checked onchange="toggleImportant(this)">
+        <label for="important-1">Important</label>
+        <button onclick="deletePrompt(this)">Delete</button>
+      </div>
+      <div class="prompt-item">
+        <span ondblclick="editPrompt(this)">Get milk</span>
+        <input type="checkbox" id="important-2" onchange="toggleImportant(this)">
+        <label for="important-2">Important</label>
+        <button onclick="deletePrompt(this)">Delete</button>
+      </div>
+      <div class="prompt-item">
+        <span ondblclick="editPrompt(this)">Breathe</span>
+        <input type="checkbox" id="important-3" onchange="toggleImportant(this)">
+        <label for="important-3">Important</label>
+        <button onclick="deletePrompt(this)">Delete</button>
+      </div>
+      <div class="prompt-item important">
+        <span ondblclick="editPrompt(this)">2pm Mtg!!!</span>
+        <input type="checkbox" id="important-4" checked onchange="toggleImportant(this)">
+        <label for="important-4">Important</label>
+        <button onclick="deletePrompt(this)">Delete</button>
+      </div>
+    </div>
   </div>
   <div id="note-pad" class="tab-content">
     <p>Note Pad tab (placeholder)</p>
@@ -299,6 +450,115 @@
       isPaused: false,
       interval: null
     };
+    let categories = ['Home', 'Life', 'Work', 'School', 'Music Practice'];
+    let currentCategoryIndex = 4;
+
+    // Swipe functionality to switch between categories
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const categoryHeader = document.getElementById('category-header');
+
+    categoryHeader.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+
+    categoryHeader.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    });
+
+    function handleSwipe() {
+      const swipeThreshold = 50;
+      if (touchEndX < touchStartX - swipeThreshold) {
+        // Swipe left - activate next category
+        currentCategoryIndex = (currentCategoryIndex + 1) % categories.length;
+      } else if (touchEndX > touchStartX + swipeThreshold) {
+        // Swipe right - activate previous category
+        currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length;
+      }
+      document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+    }
+
+    function addCategory() {
+      const container = document.querySelector('.category-container');
+      container.innerHTML = `
+        <button onclick="removeCategory()">-</button>
+        <input type="text" class="category-input" placeholder="Enter new category..." onblur="saveCategory(this)" onkeypress="if(event.key === 'Enter') saveCategory(this)">
+        <button onclick="addCategory()">+</button>
+      `;
+      container.querySelector('input').focus();
+    }
+
+    function saveCategory(input) {
+      const newCategory = input.value.trim();
+      if (newCategory) {
+        categories.push(newCategory);
+        currentCategoryIndex = categories.length - 1;
+      }
+      const container = document.querySelector('.category-container');
+      container.innerHTML = `
+        <button onclick="removeCategory()">-</button>
+        <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
+        <button onclick="addCategory()">+</button>
+      `;
+      const newCategoryHeader = document.getElementById('category-header');
+      newCategoryHeader.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+      newCategoryHeader.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+    }
+
+    function removeCategory() {
+      // Removes the currently active (visible) category
+      if (categories.length <= 1) {
+        alert('Cannot remove the last category. At least one category is required.');
+        return;
+      }
+      categories.splice(currentCategoryIndex, 1);
+      currentCategoryIndex = Math.min(currentCategoryIndex, categories.length - 1);
+      if (categories.length === 0) {
+        categories = ['Default'];
+        currentCategoryIndex = 0;
+      }
+      document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+    }
+
+    function editPrompt(span) {
+      const promptItem = span.parentElement;
+      const currentText = span.textContent;
+      const isImportant = promptItem.classList.contains('important');
+      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+      promptItem.innerHTML = `
+        <input type="text" value="${currentText}" onblur="savePromptEdit(this)" onkeypress="if(event.key === 'Enter') savePromptEdit(this)">
+        <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+        <label for="${checkboxId}">Important</label>
+        <button onclick="deletePrompt(this)">Delete</button>
+      `;
+      promptItem.querySelector('input[type="text"]').focus();
+    }
+
+    function savePromptEdit(input) {
+      const promptItem = input.parentElement;
+      const newText = input.value.trim();
+      const isImportant = promptItem.classList.contains('important');
+      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+      if (newText) {
+        promptItem.innerHTML = `
+          <span ondblclick="editPrompt(this)">${newText}</span>
+          <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+          <label for="${checkboxId}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        if (isImportant) {
+          promptItem.classList.add('important');
+        }
+      } else {
+        promptItem.remove();
+      }
+    }
 
     function parseTimeInput(input) {
       if (!input) return 0;
@@ -424,9 +684,54 @@
       return `${monthNames[date.getMonth()]} ${day}${suffix}`;
     }
 
+    let promptCounter = 4;
+
+    function showAddPromptInput() {
+      const list = document.getElementById('prompts-list');
+      const inputDiv = document.createElement('div');
+      inputDiv.className = 'prompt-item';
+      inputDiv.innerHTML = `
+        <input type="text" placeholder="Enter new prompt..." onblur="addPrompt(this)" onkeypress="if(event.key === 'Enter') addPrompt(this)">
+      `;
+      list.insertBefore(inputDiv, list.firstChild);
+      inputDiv.querySelector('input').focus();
+    }
+
+    function addPrompt(input) {
+      const text = input.value.trim();
+      if (text) {
+        promptCounter++;
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'prompt-item';
+        promptDiv.innerHTML = `
+          <span ondblclick="editPrompt(this)">${text}</span>
+          <input type="checkbox" id="important-${promptCounter}" onchange="toggleImportant(this)">
+          <label for="important-${promptCounter}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        input.parentElement.replaceWith(promptDiv);
+      } else {
+        input.parentElement.remove();
+      }
+    }
+
+    function toggleImportant(checkbox) {
+      const promptItem = checkbox.parentElement;
+      if (checkbox.checked) {
+        promptItem.classList.add('important');
+      } else {
+        promptItem.classList.remove('important');
+      }
+    }
+
+    function deletePrompt(button) {
+      button.parentElement.remove();
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('date').value = formatDate();
       resetTimer();
+      document.getElementById('category-header').textContent = categories[currentCategoryIndex];
     });
   </script>
 </body>
