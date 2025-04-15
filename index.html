@@ -280,7 +280,7 @@
     .prompt-item.important span {
       color: #28a745;
     }
-    .notes-input {
+    .notes-input, .summary-input {
       width: 100%;
       height: 100%;
       padding: 6px;
@@ -439,7 +439,7 @@
         padding: 6px 12px;
         font-size: 0.8rem;
       }
-      .notes-input {
+      .notes-input, .summary-input {
         font-size: 0.8rem;
         padding: 5px;
       }
@@ -535,7 +535,7 @@
     <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
   </div>
   <div id="summary" class="tab-content">
-    <p>Summary tab (placeholder)</p>
+    <textarea class="summary-input" placeholder="Summary of completed tasks..."></textarea>
   </div>
   <div id="rewards" class="tab-content">
     <div class="rewards-header">
@@ -562,6 +562,7 @@
     let pendingDeleteIndex = null;
     let promptCounter = 0;
     let rewardCounter = 0;
+    let notificationPermissionGranted = false;
 
     // Swipe functionality to switch between categories
     let touchStartX = 0;
@@ -581,15 +582,15 @@
       const swipeThreshold = 50;
       if (touchEndX < touchStartX - swipeThreshold) {
         // Swipe left - activate next category
-        saveCategorySpecificData(); // Save data for current category
+        saveCategorySpecificData();
         currentCategoryIndex = (currentCategoryIndex + 1) % categories.length;
       } else if (touchEndX > touchStartX + swipeThreshold) {
         // Swipe right - activate previous category
-        saveCategorySpecificData(); // Save data for current category
+        saveCategorySpecificData();
         currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length;
       }
       document.getElementById('category-header').textContent = categories[currentCategoryIndex];
-      loadCategorySpecificData(); // Load data for new category
+      loadCategorySpecificData();
     }
 
     // Save and Load Functions
@@ -645,7 +646,6 @@
         console.log('Global data loaded:', globalData);
       } catch (e) {
         console.error('Error loading global data:', e);
-        // Fallback to default prompts and rewards
         populatePrompts([
           { text: "PAY PARKING FINE!!!", isImportant: true },
           { text: "Get milk", isImportant: false },
@@ -692,10 +692,11 @@
           notes: document.getElementById('task-notes').value
         };
         const notesData = document.querySelector('#notes .notes-input').value;
+        const summaryData = document.querySelector('#summary .summary-input').value;
         const categoryData = {
           tasks: tasksData,
           notes: notesData,
-          summary: {} // Placeholder for future Summary tab data
+          summary: summaryData
         };
         let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
         categorySpecificData[currentCategory] = categoryData;
@@ -719,6 +720,7 @@
           notes: ""
         };
         const notesData = categoryData.notes || "";
+        const summaryData = categoryData.summary || "";
         // Populate Tasks tab
         document.getElementById('stage').value = tasksData.stage;
         document.getElementById('date').value = tasksData.date;
@@ -729,16 +731,18 @@
         updatePBDetails();
         // Populate Notes tab
         document.querySelector('#notes .notes-input').value = notesData;
+        // Populate Summary tab
+        document.querySelector('#summary .summary-input').value = summaryData;
         console.log(`Category-specific data loaded for ${currentCategory}:`, categoryData);
       } catch (e) {
         console.error('Error loading category-specific data:', e);
-        // Fallback to defaults
         document.getElementById('stage').value = "Scales";
         document.getElementById('date').value = formatDate();
         document.getElementById('due').value = "TBC";
         document.getElementById('task-time').value = "";
         document.getElementById('task-notes').value = "";
         document.querySelector('#notes .notes-input').value = "";
+        document.querySelector('#summary .summary-input').value = "";
         updatePBDetails();
       }
     }
@@ -788,9 +792,9 @@
       const newCategory = input.value.trim();
       if (newCategory) {
         categories.push(newCategory);
-        saveCategorySpecificData(); // Save data for current category before switching
+        saveCategorySpecificData();
         currentCategoryIndex = categories.length - 1;
-        saveCategories(); // Save updated categories
+        saveCategories();
       }
       const container = document.querySelector('.category-container');
       container.innerHTML = `
@@ -806,7 +810,7 @@
         touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
       });
-      loadCategorySpecificData(); // Load data for new category
+      loadCategorySpecificData();
     }
 
     function removeCategory() {
@@ -833,7 +837,6 @@
           categories = ['Default'];
           currentCategoryIndex = 0;
         }
-        // Remove category-specific data for the deleted category
         try {
           let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
           delete categorySpecificData[categoryToRemove];
@@ -931,6 +934,14 @@
       updateTimerDisplay();
       updateCircleProgress();
       document.getElementById('start-pause-btn').textContent = 'Start';
+      // Append Pomo data to Summary tab
+      const summaryTextarea = document.querySelector('#summary .summary-input');
+      const currentSummary = summaryTextarea.value;
+      const pomoData = `Stage: ${document.getElementById('pb-stage').textContent}, Date: ${document.getElementById('pb-date').textContent}, Due: ${document.getElementById('pb-due').textContent}, Time: ${document.getElementById('pb-time').textContent}`;
+      const timestamp = new Date().toLocaleString();
+      const newEntry = `${timestamp} - ${pomoData}\n`;
+      summaryTextarea.value = currentSummary ? `${currentSummary}\n${newEntry}` : newEntry;
+      saveCategorySpecificData(); // Save the updated summary
     }
 
     function resetTimer() {
@@ -981,7 +992,22 @@
       return `${monthNames[date.getMonth()]} ${day}${suffix}`;
     }
 
-    // Prompt Display Functions
+    // Push Notification Functions
+    async function requestNotificationPermission() {
+      if (!("Notification" in window)) {
+        console.log("This browser does not support notifications.");
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        notificationPermissionGranted = true;
+        console.log("Notification permission granted.");
+        schedulePromptNotification();
+      } else {
+        console.log("Notification permission denied.");
+      }
+    }
+
     function getPrompts() {
       const promptItems = document.querySelectorAll('#prompts-list .prompt-item');
       const prompts = [];
@@ -1014,6 +1040,26 @@
       const intervalMs = intervalSeconds * 1000;
       const displayDuration = prompt.isImportant ? intervalMs * 1.5 : intervalMs;
       setTimeout(displayRandomPrompt, displayDuration);
+    }
+
+    function schedulePromptNotification() {
+      const prompts = getPrompts();
+      if (prompts.length === 0 || !notificationPermissionGranted) return;
+      const randomIndex = Math.floor(Math.random() * prompts.length);
+      const prompt = prompts[randomIndex];
+      const title = prompt.isImportant ? "[Important] Prompt" : "Prompt";
+      const options = {
+        body: prompt.text,
+        icon: 'icon.png', // Optional: path to an icon for the notification
+        requireInteraction: true // Makes the notification persistent until dismissed
+      };
+      new Notification(title, options);
+      const intervalInput = document.getElementById('refresh-interval').value;
+      let intervalSeconds = parseTimeInput(intervalInput);
+      if (intervalSeconds <= 0) intervalSeconds = 10;
+      const intervalMs = intervalSeconds * 1000;
+      const displayDuration = prompt.isImportant ? intervalMs * 1.5 : intervalMs;
+      setTimeout(schedulePromptNotification, displayDuration);
     }
 
     function populatePrompts(prompts) {
@@ -1209,6 +1255,8 @@
       document.getElementById('task-notes').addEventListener('input', saveCategorySpecificData);
       // Notes tab textarea
       document.querySelector('#notes .notes-input').addEventListener('input', saveCategorySpecificData);
+      // Summary tab textarea
+      document.querySelector('#summary .summary-input').addEventListener('input', saveCategorySpecificData);
     }
 
     // Initialize the app
@@ -1218,7 +1266,8 @@
       loadCategorySpecificData();
       addSaveEventListeners();
       resetTimer();
-      // Start displaying random prompts
+      // Request notification permission and start displaying prompts/notifications
+      requestNotificationPermission();
       displayRandomPrompt();
       // Ensure initial tab state
       showTab('pb');
