@@ -59,6 +59,18 @@
     .header button:hover {
       color: #fff;
     }
+    .prompt-display {
+      background-color: #000;
+      padding: 8px 15px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      color: #fff;
+      border-bottom: 1px solid #333;
+    }
+    .prompt-display.important {
+      color: #28a745; /* Green for important prompts */
+    }
     .tabs {
       display: flex;
       background-color: #000;
@@ -270,7 +282,7 @@
     }
     .notes-input {
       width: 100%;
-      height: 100%; /* Fill the entire tab content area */
+      height: 100%;
       padding: 6px;
       font-size: 0.85rem;
       border: 1px solid #555;
@@ -278,7 +290,7 @@
       box-sizing: border-box;
       background-color: #222;
       color: #fff;
-      resize: none; /* Prevent manual resizing */
+      resize: none;
     }
     /* Confirmation Dialog Styles */
     .confirmation-dialog {
@@ -350,6 +362,10 @@
       .header .category-input {
         font-size: 0.9rem;
         width: 160px;
+      }
+      .prompt-display {
+        padding: 6px 12px;
+        font-size: 0.8rem;
       }
       .tabs {
         padding: 5px 0;
@@ -449,11 +465,12 @@
       <button onclick="addCategory()">+</button>
     </div>
   </div>
+  <div class="prompt-display" id="promptDisplay"></div>
   <div class="tabs">
     <div class="tab" onclick="showTab('tasks')">Tasks</div>
-    <div class="tab" onclick="showTab('pb')">Pomo</div>
+    <div class="tab active" onclick="showTab('pb')">Pomo</div>
     <div class="tab" onclick="showTab('prompts')">Prompts</div>
-    <div class="tab active" onclick="showTab('notes')">Notes</div>
+    <div class="tab" onclick="showTab('notes')">Notes</div>
     <div class="tab" onclick="showTab('summary')">Summary</div>
     <div class="tab" onclick="showTab('rewards')">Rewards</div>
   </div>
@@ -480,7 +497,7 @@
     </div>
     <textarea id="task-notes" placeholder="Write your notes here..."></textarea>
   </div>
-  <div id="pb" class="tab-content">
+  <div id="pb" class="tab-content active">
     <div class="pb-details">
       <div>Stage: <span id="pb-stage"></span></div>
       <div>Date: <span id="pb-date"></span></div>
@@ -537,7 +554,7 @@
       </div>
     </div>
   </div>
-  <div id="notes" class="tab-content active">
+  <div id="notes" class="tab-content">
     <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
   </div>
   <div id="summary" class="tab-content">
@@ -746,27 +763,14 @@
       input = input.trim().toLowerCase();
       if (input.includes(':')) {
         const parts = input.split(':').map(n => parseInt(n));
-        let hours = 0, minutes = 0, seconds = 0;
-        if (parts.length === 3) {
-          [hours, minutes, seconds] = parts;
-        } else if (parts.length === 2) {
+        let minutes = 0, seconds = 0;
+        if (parts.length === 2) {
           [minutes, seconds] = parts;
         }
-        return (isNaN(hours) ? 0 : hours * 3600) + 
-               (isNaN(minutes) ? 0 : minutes * 60) + 
-               (isNaN(seconds) ? 0 : seconds);
-      } else if (input.includes('hour')) {
-        const num = parseInt(input);
-        return isNaN(num) ? 0 : num * 3600;
-      } else if (input.includes('min')) {
-        const num = parseInt(input);
-        return isNaN(num) ? 0 : num * 60;
-      } else if (input.includes('sec')) {
-        const num = parseInt(input);
-        return isNaN(num) ? 0 : num;
+        return (isNaN(minutes) ? 0 : minutes * 60) + (isNaN(seconds) ? 0 : seconds);
       } else {
         const num = parseInt(input);
-        return isNaN(num) ? 0 : num * 60;
+        return isNaN(num) ? 0 : num;
       }
     }
 
@@ -889,6 +893,41 @@
 
     let promptCounter = 4;
     let rewardCounter = 22;
+
+    // Prompt Display Functions
+    function getPrompts() {
+      const promptItems = document.querySelectorAll('#prompts-list .prompt-item');
+      const prompts = [];
+      promptItems.forEach(item => {
+        const text = item.querySelector('span').textContent;
+        const isImportant = item.classList.contains('important');
+        prompts.push({ text, isImportant });
+      });
+      return prompts;
+    }
+
+    function displayRandomPrompt() {
+      const prompts = getPrompts();
+      if (prompts.length === 0) {
+        document.getElementById('promptDisplay').textContent = '';
+        return;
+      }
+      const randomIndex = Math.floor(Math.random() * prompts.length);
+      const prompt = prompts[randomIndex];
+      const display = document.getElementById('promptDisplay');
+      display.textContent = prompt.text;
+      if (prompt.isImportant) {
+        display.classList.add('important');
+      } else {
+        display.classList.remove('important');
+      }
+      const intervalInput = document.getElementById('refresh-interval').value;
+      let intervalSeconds = parseTimeInput(intervalInput);
+      if (intervalSeconds <= 0) intervalSeconds = 10; // Default to 10 seconds if invalid
+      const intervalMs = intervalSeconds * 1000;
+      const displayDuration = prompt.isImportant ? intervalMs * 1.5 : intervalMs; // 1.5x for important prompts
+      setTimeout(displayRandomPrompt, displayDuration);
+    }
 
     function showAddPromptInput() {
       const list = document.getElementById('prompts-list');
@@ -1021,7 +1060,7 @@
       button.parentElement.remove();
     }
 
-    // Ensure the confirmation dialog is hidden on page load
+    // Ensure the confirmation dialog is hidden on page load and start prompt rotation
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('date').value = formatDate();
       resetTimer();
@@ -1031,8 +1070,10 @@
       if (dialog) {
         dialog.classList.remove('active');
       }
+      // Start displaying random prompts
+      displayRandomPrompt();
       // Ensure initial tab state
-      showTab('notes');
+      showTab('pb');
     });
   </script>
 </body>
