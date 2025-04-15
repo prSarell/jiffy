@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jiffy - EF Assistant</title> <!-- Changed Title -->
+  <title>Music Practice</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Jiffy"> <!-- Changed App Title -->
+  <meta name="apple-mobile-web-app-title" content="Music Practice">
   <link rel="apple-touch-icon" href="icon.png">
   <style>
     body {
@@ -22,7 +22,6 @@
       padding: 10px;
       background-color: #333;
       color: #fff;
-      font-size: 1.1em; /* Slightly larger */
     }
     .tabs {
       display: flex;
@@ -51,43 +50,105 @@
       display: flex;
       flex-direction: column;
     }
-    .pause-btn {
+    .pb-details {
+      background-color: #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .pb-details div {
+      font-size: 14px;
+      flex: 1;
+      text-align: center;
+    }
+    .pb-controls {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .pb-controls button {
       background-color: #555;
       color: #fff;
       border: none;
       padding: 10px 20px;
       cursor: pointer;
-      margin-bottom: 15px;
+      margin: 0 5px;
+      border-radius: 3px;
     }
-
-    /* --- Task Header Styling --- */
+    .pb-controls button:hover {
+      background-color: #666;
+    }
+    .pb-timer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+    .timer-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+    .timer-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      color: #333;
+      font-weight: bold;
+    }
+    .timer-circle {
+      transform: rotate(-90deg);
+    }
+    .timer-circle-bg {
+      fill: none;
+      stroke: #ddd;
+      stroke-width: 10;
+    }
+    .timer-circle-progress {
+      fill: none;
+      stroke: #28a745;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear;
+    }
     .task-header {
       margin-bottom: 20px;
       padding: 15px;
       background-color: #ddd;
       border-radius: 5px;
     }
-    .task-header h3 { /* Styling for the main task title */
+    .task-header h3 {
       text-align: center;
-      margin: 0 0 15px 0; /* More space below */
+      margin: 0 0 10px 0;
       padding-bottom: 10px;
-      border-bottom: 1px solid #bbb; /* Separator line */
-      font-size: 1.2em;
     }
-    .task-details { /* Container for the details */
-       font-size: 0.9em;
-       line-height: 1.6; /* Better spacing for lines */
-       text-align: center; /* Center align details */
+    .task-header .fields {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
     }
-    .task-details div { /* Each detail line */
-        margin-bottom: 5px; /* Space between detail lines */
+    .task-header .field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
-    .task-details strong { /* Make labels bold */
-        color: #333;
-        margin-right: 5px; /* Space after label */
+    .task-header label {
+      font-size: 14px;
+      margin-bottom: 5px;
     }
-    /* --- End Task Header Styling --- */
-
+    .task-header input {
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      box-sizing: border-box;
+    }
     textarea {
       flex: 1;
       width: 100%;
@@ -97,14 +158,12 @@
       resize: none;
       box-sizing: border-box;
       background-color: #fff;
-      min-height: 150px; /* Ensure textarea has some minimum height */
     }
   </style>
 </head>
 <body>
-  <div class="header">Jiffy</div> <!-- Changed Header -->
+  <div class="header">Music Practice</div>
   <div class="tabs">
-    <!-- Tab labels might need changing later, keeping for now -->
     <div class="tab active" onclick="showTab('tasks')">Tasks</div>
     <div class="tab" onclick="showTab('pb')">PB</div>
     <div class="tab" onclick="showTab('prompts')">Prompts</div>
@@ -112,27 +171,51 @@
     <div class="tab" onclick="showTab('summary')">Summary</div>
     <div class="tab" onclick="showTab('rewards')">Rewards</div>
   </div>
-
-  <!-- ****** MODIFIED TASKS TAB CONTENT ****** -->
   <div id="tasks" class="tab-content active">
     <div class="task-header">
-      <h3><span id="task-name">Review Project Proposal</span></h3>
-      <div class="task-details">
-        <div><strong>Priority:</strong> <span id="task-priority">High</span></div>
-        <div><strong>Due:</strong> <span id="task-due-date">Today, 5:00 PM</span></div>
-        <div><strong>Est. Time:</strong> <span id="task-est-time">60 min</span></div>
-        <!-- Timer display remains linked here -->
-        <div><strong>Timer:</strong> <span id="timer-display">00:30</span></div>
+      <h3>Practice Tasks</h3>
+      <div class="fields">
+        <div class="field">
+          <label for="stage">Stage</label>
+          <input id="stage" type="text" value="Scales">
+        </div>
+        <div class="field">
+          <label for="date">Date</label>
+          <input id="date" type="text" readonly>
+        </div>
+        <div class="field">
+          <label for="due">Due</label>
+          <input id="due" type="text" value="TBC">
+        </div>
+        <div class="field">
+          <label for="task-time">Time</label>
+          <input id="task-time" type="text" placeholder="e.g., 1:30:00 or 30 min">
+        </div>
       </div>
     </div>
-    <textarea placeholder="Task notes, breakdown, or reflections..."></textarea>
+    <textarea id="task-notes" placeholder="Write your notes here..."></textarea>
   </div>
-  <!-- ****** END MODIFIED TASKS TAB CONTENT ****** -->
-
   <div id="pb" class="tab-content">
-    <button class="pause-btn" onclick="togglePause()">Pause</button>
-    <div>Timer: <span id="pomo-timer">00:30</span></div>
-    <button onclick="startTimer()">Start Timer</button>
+    <div class="pb-details">
+      <div>Stage: <span id="pb-stage"></span></div>
+      <div>Date: <span id="pb-date"></span></div>
+      <div>Due: <span id="pb-due"></span></div>
+      <div>Time: <span id="pb-time"></span></div>
+    </div>
+    <div class="pb-controls">
+      <button onclick="startTimer()">Start</button>
+      <button onclick="toggleTimer()">Pause</button>
+      <button onclick="resetTimer()">Reset</button>
+    </div>
+    <div class="pb-timer">
+      <div class="timer-container">
+        <svg width="200" height="200" class="timer-circle">
+          <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
+          <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
+        </svg>
+        <div id="pb-timer" class="timer-display">00:00:00</div>
+      </div>
+    </div>
   </div>
   <div id="prompts" class="tab-content">
     <p>Prompts tab (placeholder)</p>
@@ -146,68 +229,146 @@
   <div id="rewards" class="tab-content">
     <p>Rewards tab (placeholder)</p>
   </div>
-
   <script>
-    let timerSeconds = 30; // Initial timer value (seconds)
-    let isPaused = false;
-    let timerInterval = null;
+    let timer = {
+      totalSeconds: 0,
+      seconds: 0,
+      isRunning: false,
+      isPaused: false,
+      interval: null
+    };
+
+    function parseTimeInput(input) {
+      if (!input) return 0;
+      input = input.trim().toLowerCase();
+      // Handle formats: "1:30:00", "30 min", "90 seconds", "1 hour", "45"
+      if (input.includes(':')) {
+        const parts = input.split(':').map(n => parseInt(n));
+        let hours = 0, minutes = 0, seconds = 0;
+        if (parts.length === 3) {
+          [hours, minutes, seconds] = parts;
+        } else if (parts.length === 2) {
+          [minutes, seconds] = parts;
+        }
+        return (isNaN(hours) ? 0 : hours * 3600) + 
+               (isNaN(minutes) ? 0 : minutes * 60) + 
+               (isNaN(seconds) ? 0 : seconds);
+      } else if (input.includes('hour')) {
+        const num = parseInt(input);
+        return isNaN(num) ? 0 : num * 3600;
+      } else if (input.includes('min')) {
+        const num = parseInt(input);
+        return isNaN(num) ? 0 : num * 60;
+      } else if (input.includes('sec')) {
+        const num = parseInt(input);
+        return isNaN(num) ? 0 : num;
+      } else {
+        const num = parseInt(input);
+        return isNaN(num) ? 0 : num * 60; // Assume minutes if just a number
+      }
+    }
 
     function showTab(tabName) {
-      // Use event.currentTarget instead of event.target for reliability
-      const clickedTab = event.currentTarget;
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.getElementById(tabName).classList.add('active');
-      clickedTab.classList.add('active');
+      document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
+      if (tabName === 'pb') {
+        updatePBDetails();
+        resetTimer();
+      }
+    }
+
+    function updatePBDetails() {
+      document.getElementById('pb-stage').textContent = document.getElementById('stage').value || 'N/A';
+      document.getElementById('pb-date').textContent = document.getElementById('date').value || 'N/A';
+      document.getElementById('pb-due').textContent = document.getElementById('due').value || 'N/A';
+      document.getElementById('pb-time').textContent = document.getElementById('task-time').value || 'N/A';
     }
 
     function startTimer() {
-      if (!timerInterval) {
-        // Ensure timer doesn't restart if already running
-        isPaused = false; // Make sure it's not paused when starting
-        document.querySelectorAll('.pause-btn').forEach(btn => { btn.textContent = 'Pause'; }); // Update pause button text
-        updateTimerDisplay(); // Update display immediately
-        timerInterval = setInterval(() => {
-          if (!isPaused && timerSeconds > 0) {
-            timerSeconds--;
+      if (!timer.isRunning) {
+        timer.totalSeconds = parseTimeInput(document.getElementById('task-time').value);
+        if (timer.totalSeconds <= 0) {
+          alert('Please enter a valid time in the Tasks tab (e.g., "1:30:00" or "30 min").');
+          return;
+        }
+        timer.seconds = timer.totalSeconds;
+        timer.isRunning = true;
+        timer.isPaused = false;
+        timer.interval = setInterval(() => {
+          if (!timer.isPaused && timer.seconds > 0) {
+            timer.seconds--;
             updateTimerDisplay();
-          } else if (timerSeconds === 0) { // Stop when timer hits 0
-            clearInterval(timerInterval);
-            timerInterval = null;
-            // Optional: Add a notification or sound here
-            alert("Timer finished!"); // Simple alert for now
+            updateCircleProgress();
+          }
+          if (timer.seconds === 0 && timer.isRunning) {
+            clearInterval(timer.interval);
+            timer.isRunning = false;
+            timer.interval = null;
+            updateTimerDisplay();
+            updateCircleProgress();
+            alert('Timer finished!');
           }
         }, 1000);
+        document.querySelector('.pb-controls button[onclick="toggleTimer()"]').textContent = 'Pause';
       }
     }
 
-    function togglePause() {
-        // Only toggle if the timer is running
-      if (timerInterval) {
-          isPaused = !isPaused;
-          document.querySelectorAll('.pause-btn').forEach(btn => {
-              btn.textContent = isPaused ? 'Resume' : 'Pause';
-          });
-      } else if (timerSeconds > 0) {
-          // If timer is not running but has time, treat toggle as start
-          startTimer();
+    function toggleTimer() {
+      if (timer.isRunning) {
+        timer.isPaused = !timer.isPaused;
+        document.querySelector('.pb-controls button[onclick="toggleTimer()"]').textContent = timer.isPaused ? 'Resume' : 'Pause';
       }
+    }
+
+    function resetTimer() {
+      clearInterval(timer.interval);
+      timer.isRunning = false;
+      timer.isPaused = false;
+      timer.totalSeconds = parseTimeInput(document.getElementById('task-time').value);
+      timer.seconds = timer.totalSeconds;
+      timer.interval = null;
+      updateTimerDisplay();
+      updateCircleProgress();
+      document.querySelector('.pb-controls button[onclick="toggleTimer()"]').textContent = 'Pause';
     }
 
     function updateTimerDisplay() {
-      const minutes = Math.floor(timerSeconds / 60);
-      const seconds = timerSeconds % 60;
-      const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      // Update both timer displays if they exist
-      const timerDisplayTask = document.getElementById('timer-display');
-      const timerDisplayPomo = document.getElementById('pomo-timer');
-      if (timerDisplayTask) timerDisplayTask.textContent = timeStr;
-      if (timerDisplayPomo) timerDisplayPomo.textContent = timeStr;
+      const hours = Math.floor(timer.seconds / 3600);
+      const minutes = Math.floor((timer.seconds % 3600) / 60);
+      const seconds = timer.seconds % 60;
+      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      document.getElementById('pb-timer').textContent = timeStr;
     }
 
-    // Initialize display on load
-    document.addEventListener('DOMContentLoaded', updateTimerDisplay);
+    function updateCircleProgress() {
+      const circle = document.getElementById('timer-circle-progress');
+      const circumference = 596.9; // 2 * π * radius (95)
+      const progress = timer.totalSeconds ? timer.seconds / timer.totalSeconds : 1;
+      const offset = circumference * (1 - progress);
+      circle.setAttribute('stroke-dashoffset', offset);
+    }
 
+    // Function to format date like "April 15th"
+    function formatDate() {
+      const date = new Date();
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const day = date.getDate();
+      const suffix = (day % 10 === 1 && day !== 11) ? 'st' :
+                     (day % 10 === 2 && day !== 12) ? 'nd' :
+                     (day % 10 === 3 && day !== 13) ? 'rd' : 'th';
+      return `${monthNames[date.getMonth()]} ${day}${suffix}`;
+    }
+
+    // Set date and timer on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('date').value = formatDate();
+      resetTimer();
+    });
   </script>
 </body>
 </html>
