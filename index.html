@@ -292,6 +292,49 @@
       color: #fff;
       resize: none;
     }
+    /* Reward Pop-Up Styles */
+    .reward-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .reward-popup.active {
+      display: flex;
+    }
+    .reward-box {
+      background-color: #333;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: center;
+      color: #fff;
+      max-width: 300px;
+      width: 80%;
+    }
+    .reward-box p {
+      margin: 0 0 20px 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #28a745; /* Green to match important prompts */
+    }
+    .reward-box button {
+      background-color: #444;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .reward-box button:hover {
+      background-color: #555;
+    }
     /* Confirmation Dialog Styles */
     .confirmation-dialog {
       display: none;
@@ -439,6 +482,16 @@
         padding: 6px 12px;
         font-size: 0.8rem;
       }
+      .reward-box {
+        padding: 15px;
+      }
+      .reward-box p {
+        font-size: 1rem;
+      }
+      .reward-box button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
       .notes-input, .summary-input {
         font-size: 0.8rem;
         padding: 5px;
@@ -455,6 +508,14 @@
         <button class="yes-btn" onclick="confirmDeleteCategory(true)">Yes</button>
         <button onclick="confirmDeleteCategory(false)">No</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Reward Pop-Up -->
+  <div class="reward-popup" id="rewardPopup">
+    <div class="reward-box">
+      <p id="rewardMessage"></p>
+      <button onclick="closeRewardPopup()">Close</button>
     </div>
   </div>
 
@@ -585,9 +646,22 @@
       if ("Notification" in window && Notification.permission === "granted") {
         new Notification(promptText, {
           body: "Prompt Reminder",
-          icon: "icon.png" // Optional: use the app's icon
+          icon: "icon.png"
         });
       }
+    }
+
+    // Reward Pop-Up Functions
+    function showRewardPopup(rewardText) {
+      const popup = document.getElementById('rewardPopup');
+      const message = document.getElementById('rewardMessage');
+      message.textContent = rewardText;
+      popup.classList.add('active');
+    }
+
+    function closeRewardPopup() {
+      const popup = document.getElementById('rewardPopup');
+      popup.classList.remove('active');
     }
 
     // Swipe functionality to switch between categories
@@ -956,6 +1030,15 @@
       clearInterval(timer.interval);
       timer.isRunning = false;
       timer.isPaused = false;
+      // Check if completed early
+      if (timer.seconds > 0) {
+        const rewards = getRewards();
+        if (rewards.length > 0) {
+          const randomIndex = Math.floor(Math.random() * rewards.length);
+          const reward = rewards[randomIndex];
+          showRewardPopup(reward);
+        }
+      }
       timer.seconds = timer.totalSeconds;
       timer.interval = null;
       updateTimerDisplay();
@@ -969,7 +1052,7 @@
       const summaryEntry = `Completed Task - Stage: ${stage}, Date: ${date}, Due: ${due}, Time: ${time}\n`;
       const summaryTextarea = document.querySelector('#summary .summary-input');
       summaryTextarea.value = (summaryTextarea.value ? summaryTextarea.value + '\n' : '') + summaryEntry;
-      saveCategorySpecificData(); // Save the updated summary
+      saveCategorySpecificData();
     }
 
     function resetTimer() {
