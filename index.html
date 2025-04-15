@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Music Practice</title>
+  <title>Jiffy - EF Assistant</title> <!-- Changed Title -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Music Practice">
+  <meta name="apple-mobile-web-app-title" content="Jiffy"> <!-- Changed App Title -->
   <link rel="apple-touch-icon" href="icon.png">
   <style>
     body {
@@ -22,6 +22,7 @@
       padding: 10px;
       background-color: #333;
       color: #fff;
+      font-size: 1.1em; /* Slightly larger */
     }
     .tabs {
       display: flex;
@@ -58,20 +59,35 @@
       cursor: pointer;
       margin-bottom: 15px;
     }
+
+    /* --- Task Header Styling --- */
     .task-header {
       margin-bottom: 20px;
       padding: 15px;
       background-color: #ddd;
       border-radius: 5px;
     }
-    .task-header h3 {
+    .task-header h3 { /* Styling for the main task title */
       text-align: center;
-      margin: 0 0 10px 0;
+      margin: 0 0 15px 0; /* More space below */
       padding-bottom: 10px;
+      border-bottom: 1px solid #bbb; /* Separator line */
+      font-size: 1.2em;
     }
-    .task-header div {
-      text-align: center;
+    .task-details { /* Container for the details */
+       font-size: 0.9em;
+       line-height: 1.6; /* Better spacing for lines */
+       text-align: center; /* Center align details */
     }
+    .task-details div { /* Each detail line */
+        margin-bottom: 5px; /* Space between detail lines */
+    }
+    .task-details strong { /* Make labels bold */
+        color: #333;
+        margin-right: 5px; /* Space after label */
+    }
+    /* --- End Task Header Styling --- */
+
     textarea {
       flex: 1;
       width: 100%;
@@ -81,12 +97,14 @@
       resize: none;
       box-sizing: border-box;
       background-color: #fff;
+      min-height: 150px; /* Ensure textarea has some minimum height */
     }
   </style>
 </head>
 <body>
-  <div class="header">Music Practice</div>
+  <div class="header">Jiffy</div> <!-- Changed Header -->
   <div class="tabs">
+    <!-- Tab labels might need changing later, keeping for now -->
     <div class="tab active" onclick="showTab('tasks')">Tasks</div>
     <div class="tab" onclick="showTab('pb')">PB</div>
     <div class="tab" onclick="showTab('prompts')">Prompts</div>
@@ -94,13 +112,23 @@
     <div class="tab" onclick="showTab('summary')">Summary</div>
     <div class="tab" onclick="showTab('rewards')">Rewards</div>
   </div>
+
+  <!-- ****** MODIFIED TASKS TAB CONTENT ****** -->
   <div id="tasks" class="tab-content active">
     <div class="task-header">
-      <h3>Bins on Thursday!!</h3>
-      <div>Stage: Scales | Date: April 15th | Due: TBC | Time: <span id="timer-display">00:30</span></div>
+      <h3><span id="task-name">Review Project Proposal</span></h3>
+      <div class="task-details">
+        <div><strong>Priority:</strong> <span id="task-priority">High</span></div>
+        <div><strong>Due:</strong> <span id="task-due-date">Today, 5:00 PM</span></div>
+        <div><strong>Est. Time:</strong> <span id="task-est-time">60 min</span></div>
+        <!-- Timer display remains linked here -->
+        <div><strong>Timer:</strong> <span id="timer-display">00:30</span></div>
+      </div>
     </div>
-    <textarea placeholder="Write your notes here..."></textarea>
+    <textarea placeholder="Task notes, breakdown, or reflections..."></textarea>
   </div>
+  <!-- ****** END MODIFIED TASKS TAB CONTENT ****** -->
+
   <div id="pb" class="tab-content">
     <button class="pause-btn" onclick="togglePause()">Pause</button>
     <div>Timer: <span id="pomo-timer">00:30</span></div>
@@ -118,47 +146,68 @@
   <div id="rewards" class="tab-content">
     <p>Rewards tab (placeholder)</p>
   </div>
+
   <script>
-    let timerSeconds = 30;
+    let timerSeconds = 30; // Initial timer value (seconds)
     let isPaused = false;
     let timerInterval = null;
 
     function showTab(tabName) {
+      // Use event.currentTarget instead of event.target for reliability
+      const clickedTab = event.currentTarget;
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.getElementById(tabName).classList.add('active');
-      event.target.classList.add('active');
+      clickedTab.classList.add('active');
     }
 
     function startTimer() {
       if (!timerInterval) {
+        // Ensure timer doesn't restart if already running
+        isPaused = false; // Make sure it's not paused when starting
+        document.querySelectorAll('.pause-btn').forEach(btn => { btn.textContent = 'Pause'; }); // Update pause button text
+        updateTimerDisplay(); // Update display immediately
         timerInterval = setInterval(() => {
           if (!isPaused && timerSeconds > 0) {
             timerSeconds--;
             updateTimerDisplay();
-          }
-          if (timerSeconds === 0) {
+          } else if (timerSeconds === 0) { // Stop when timer hits 0
             clearInterval(timerInterval);
             timerInterval = null;
+            // Optional: Add a notification or sound here
+            alert("Timer finished!"); // Simple alert for now
           }
         }, 1000);
       }
     }
 
     function togglePause() {
-      isPaused = !isPaused;
-      document.querySelectorAll('.pause-btn').forEach(btn => {
-        btn.textContent = isPaused ? 'Resume' : 'Pause';
-      });
+        // Only toggle if the timer is running
+      if (timerInterval) {
+          isPaused = !isPaused;
+          document.querySelectorAll('.pause-btn').forEach(btn => {
+              btn.textContent = isPaused ? 'Resume' : 'Pause';
+          });
+      } else if (timerSeconds > 0) {
+          // If timer is not running but has time, treat toggle as start
+          startTimer();
+      }
     }
 
     function updateTimerDisplay() {
       const minutes = Math.floor(timerSeconds / 60);
       const seconds = timerSeconds % 60;
       const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      document.getElementById('timer-display').textContent = timeStr;
-      document.getElementById('pomo-timer').textContent = timeStr;
+      // Update both timer displays if they exist
+      const timerDisplayTask = document.getElementById('timer-display');
+      const timerDisplayPomo = document.getElementById('pomo-timer');
+      if (timerDisplayTask) timerDisplayTask.textContent = timeStr;
+      if (timerDisplayPomo) timerDisplayPomo.textContent = timeStr;
     }
+
+    // Initialize display on load
+    document.addEventListener('DOMContentLoaded', updateTimerDisplay);
+
   </script>
 </body>
 </html>
