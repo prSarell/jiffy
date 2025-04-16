@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Jiffy</title>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Jiffy">
-  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="apple-touch-icon" href="/icon.png">
+  <meta name="theme-color" content="#000">
   <style>
     body {
       margin: 0;
@@ -607,6 +609,8 @@
     <div class="rewards-list" id="rewards-list"></div>
   </div>
   <script>
+    console.log('Script loaded, standalone:', window.navigator.standalone);
+
     let timer = {
       totalSeconds: 0,
       seconds: 0,
@@ -624,8 +628,10 @@
     // Get the next prompt in sequence
     function getNextPrompt() {
       try {
+        console.log('Getting next prompt');
         const prompts = getPrompts();
         if (!prompts || prompts.length === 0) {
+          console.log("No prompts available");
           return null;
         }
         let storedIndex = localStorage.getItem('currentPromptIndex');
@@ -636,6 +642,7 @@
         const prompt = prompts[currentPromptIndex];
         currentPromptIndex = (currentPromptIndex + 1) % prompts.length;
         localStorage.setItem('currentPromptIndex', currentPromptIndex);
+        console.log('Next prompt:', prompt);
         return prompt;
       } catch (e) {
         console.error("Error in getNextPrompt:", e);
@@ -646,6 +653,7 @@
     // Display prompt in-app sequentially with fade effect
     function displaySequentialPrompt() {
       try {
+        console.log('Displaying sequential prompt');
         const display = document.getElementById('promptDisplay');
         if (!display) {
           console.error("promptDisplay element not found");
@@ -719,9 +727,11 @@
         if (categoryHeader) {
           categoryHeader.addEventListener('touchstart', (e) => {
             touchStartX = e.changedTouches[0].screenX;
+            console.log('Touch start:', touchStartX);
           });
           categoryHeader.addEventListener('touchend', (e) => {
             touchEndX = e.changedTouches[0].screenX;
+            console.log('Touch end:', touchEndX);
             handleSwipe();
           });
         } else {
@@ -746,6 +756,7 @@
         if (categoryHeader) {
           categoryHeader.textContent = categories[currentCategoryIndex];
           loadCategorySpecificData();
+          console.log('Switched to category:', categories[currentCategoryIndex]);
         } else {
           console.error("category-header element not found during swipe");
         }
@@ -1565,7 +1576,7 @@
     // Initialize the app
     document.addEventListener('DOMContentLoaded', () => {
       try {
-        console.log('DOM loaded');
+        console.log('DOM loaded, initializing app');
         const promptDisplay = document.getElementById('promptDisplay');
         if (!promptDisplay) console.error("promptDisplay element not found");
         loadCategories();
