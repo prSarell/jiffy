@@ -321,7 +321,7 @@
       margin: 0 0 20px 0;
       font-size: 1.2rem;
       font-weight: bold;
-      color: #28a745; /* Green to match important prompts */
+      color: #28a745;
     }
     .reward-box button {
       background-color: #444;
@@ -587,6 +587,7 @@
         <input id="refresh-interval" type="text" value="00:10">
       </div>
       <button onclick="showAddPromptInput()">Add Prompt</button>
+      <button onclick="requestNotificationPermission()">Allow Notifications</button>
     </div>
     <div class="prompts-list" id="prompts-list">
       <!-- Populated dynamically -->
