@@ -69,7 +69,7 @@
       border-bottom: 1px solid #333;
       opacity: 1;
       transition: opacity 0.7s ease-in-out;
-      min-height: 30px; /* Ensure consistent height */
+      min-height: 30px;
     }
     .prompt-display.important {
       color: #28a745;
@@ -583,7 +583,7 @@
   <div id="prompts" class="tab-content">
     <div class="prompts-header">
       <div>
-        <label for="prompt-interval">Prompt Refresh Interval (MM:SS)</label>
+        <label for="prompt-interval">Prompt Interval (MM:SS)</label>
         <input id="prompt-interval" type="text" value="00:30" placeholder="e.g., 00:30">
       </div>
       <button onclick="showAddPromptInput()">Add Prompt</button>
@@ -599,8 +599,8 @@
   <div id="rewards" class="tab-content">
     <div class="rewards-header">
       <div>
-        <label for="rewards-refresh-interval">Reward Refresh Interval (MM:SS)</label>
-        <input id="rewards-refresh-interval" type="text" value="00:30" placeholder="e.g., 00:30">
+        <label for="rewards-interval">Reward Interval (MM:SS)</label>
+        <input id="rewards-interval" type="text" value="00:30" placeholder="e.g., 00:30">
       </div>
       <button onclick="showAddRewardInput()">Add Reward</button>
     </div>
@@ -656,7 +656,6 @@
           console.error("prompt-interval input not found");
           return;
         }
-        // Fade out
         display.classList.add('hidden');
         setTimeout(() => {
           const prompt = getNextPrompt();
@@ -670,11 +669,10 @@
           } else {
             display.textContent = 'No prompts set';
           }
-          // Fade in
           display.classList.remove('hidden');
-        }, 700); // Match CSS transition
+        }, 700);
         let intervalSeconds = parseTimeInput(intervalInput.value);
-        if (intervalSeconds < 10) intervalSeconds = 10; // Minimum 10s for gentleness
+        if (intervalSeconds < 10) intervalSeconds = 30;
         const intervalMs = intervalSeconds * 1000;
         setTimeout(displaySequentialPrompt, intervalMs);
       } catch (e) {
@@ -684,58 +682,75 @@
 
     // Reward Pop-Up Functions
     function showRewardPopup(rewardText) {
-      const popup = document.getElementById('rewardPopup');
-      const message = document.getElementById('rewardMessage');
-      if (popup && message) {
-        message.textContent = rewardText;
-        popup.classList.add('active');
-      } else {
-        console.error("Reward popup elements not found");
+      try {
+        const popup = document.getElementById('rewardPopup');
+        const message = document.getElementById('rewardMessage');
+        if (popup && message) {
+          message.textContent = rewardText;
+          popup.classList.add('active');
+        } else {
+          console.error("Reward popup elements not found");
+        }
+      } catch (e) {
+        console.error("Error in showRewardPopup:", e);
       }
     }
 
     function closeRewardPopup() {
-      const popup = document.getElementById('rewardPopup');
-      if (popup) {
-        popup.classList.remove('active');
-      } else {
-        console.error("Reward popup not found");
+      try {
+        const popup = document.getElementById('rewardPopup');
+        if (popup) {
+          popup.classList.remove('active');
+        } else {
+          console.error("Reward popup not found");
+        }
+      } catch (e) {
+        console.error("Error in closeRewardPopup:", e);
       }
     }
 
     // Swipe functionality to switch between categories
     let touchStartX = 0;
     let touchEndX = 0;
-    const categoryHeader = document.getElementById('category-header');
 
-    if (categoryHeader) {
-      categoryHeader.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-      });
-
-      categoryHeader.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-      });
-    } else {
-      console.error("category-header element not found");
+    function setupCategorySwipe() {
+      try {
+        const categoryHeader = document.getElementById('category-header');
+        if (categoryHeader) {
+          categoryHeader.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+          });
+          categoryHeader.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+          });
+        } else {
+          console.error("category-header element not found");
+        }
+      } catch (e) {
+        console.error("Error in setupCategorySwipe:", e);
+      }
     }
 
     function handleSwipe() {
-      const swipeThreshold = 50;
-      if (touchEndX < touchStartX - swipeThreshold) {
-        saveCategorySpecificData();
-        currentCategoryIndex = (currentCategoryIndex + 1) % categories.length;
-      } else if (touchEndX > touchStartX + swipeThreshold) {
-        saveCategorySpecificData();
-        currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length;
-      }
-      const categoryHeader = document.getElementById('category-header');
-      if (categoryHeader) {
-        categoryHeader.textContent = categories[currentCategoryIndex];
-        loadCategorySpecificData();
-      } else {
-        console.error("category-header element not found during swipe");
+      try {
+        const swipeThreshold = 50;
+        if (touchEndX < touchStartX - swipeThreshold) {
+          saveCategorySpecificData();
+          currentCategoryIndex = (currentCategoryIndex + 1) % categories.length;
+        } else if (touchEndX > touchStartX + swipeThreshold) {
+          saveCategorySpecificData();
+          currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length;
+        }
+        const categoryHeader = document.getElementById('category-header');
+        if (categoryHeader) {
+          categoryHeader.textContent = categories[currentCategoryIndex];
+          loadCategorySpecificData();
+        } else {
+          console.error("category-header element not found during swipe");
+        }
+      } catch (e) {
+        console.error("Error in handleSwipe:", e);
       }
     }
 
@@ -943,110 +958,131 @@
     }
 
     function addCategory() {
-      const container = document.querySelector('.category-container');
-      if (container) {
-        container.innerHTML = `
-          <button onclick="removeCategory()">-</button>
-          <input type="text" class="category-input" placeholder="Enter new category..." onblur="saveCategory(this)" onkeypress="if(event.key === 'Enter') saveCategory(this)">
-          <button onclick="addCategory()">+</button>
-        `;
-        container.querySelector('input').focus();
-      } else {
-        console.error("category-container not found");
+      try {
+        const container = document.querySelector('.category-container');
+        if (container) {
+          container.innerHTML = `
+            <button onclick="removeCategory()">-</button>
+            <input type="text" class="category-input" placeholder="Enter new category..." onblur="saveCategory(this)" onkeypress="if(event.key === 'Enter') saveCategory(this)">
+            <button onclick="addCategory()">+</button>
+          `;
+          container.querySelector('input').focus();
+        } else {
+          console.error("category-container not found");
+        }
+      } catch (e) {
+        console.error("Error in addCategory:", e);
       }
     }
 
     function saveCategory(input) {
-      const newCategory = input.value.trim();
-      if (newCategory) {
-        categories.push(newCategory);
-        saveCategorySpecificData();
-        currentCategoryIndex = categories.length - 1;
-        saveCategories();
-      }
-      const container = document.querySelector('.category-container');
-      if (container) {
-        container.innerHTML = `
-          <button onclick="removeCategory()">-</button>
-          <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
-          <button onclick="addCategory()">+</button>
-        `;
-        const newCategoryHeader = document.getElementById('category-header');
-        if (newCategoryHeader) {
-          newCategoryHeader.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-          });
-          newCategoryHeader.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-          });
+      try {
+        const newCategory = input.value.trim();
+        if (newCategory) {
+          categories.push(newCategory);
+          saveCategorySpecificData();
+          currentCategoryIndex = categories.length - 1;
+          saveCategories();
         }
-        loadCategorySpecificData();
-      } else {
-        console.error("category-container not found");
+        const container = document.querySelector('.category-container');
+        if (container) {
+          container.innerHTML = `
+            <button onclick="removeCategory()">-</button>
+            <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
+            <button onclick="addCategory()">+</button>
+          `;
+          const newCategoryHeader = document.getElementById('category-header');
+          if (newCategoryHeader) {
+            newCategoryHeader.addEventListener('touchstart', (e) => {
+              touchStartX = e.changedTouches[0].screenX;
+            });
+            newCategoryHeader.addEventListener('touchend', (e) => {
+              touchEndX = e.changedTouches[0].screenX;
+              handleSwipe();
+            });
+          }
+          loadCategorySpecificData();
+        } else {
+          console.error("category-container not found");
+        }
+      } catch (e) {
+        console.error("Error in saveCategory:", e);
       }
     }
 
     function removeCategory() {
-      if (categories.length <= 1) {
-        alert('Cannot remove the last category. At least one category is required.');
-        return;
-      }
-      pendingDeleteIndex = currentCategoryIndex;
-      const categoryName = categories[currentCategoryIndex];
-      const dialog = document.getElementById('confirmationDialog');
-      const message = document.getElementById('confirmationMessage');
-      if (dialog && message) {
-        message.textContent = `Are you sure you want to delete '${categoryName}'?`;
-        dialog.classList.add('active');
-      } else {
-        console.error("Confirmation dialog elements not found");
+      try {
+        if (categories.length <= 1) {
+          alert('Cannot remove the last category. At least one category is required.');
+          return;
+        }
+        pendingDeleteIndex = currentCategoryIndex;
+        const categoryName = categories[currentCategoryIndex];
+        const dialog = document.getElementById('confirmationDialog');
+        const message = document.getElementById('confirmationMessage');
+        if (dialog && message) {
+          message.textContent = `Are you sure you want to delete '${categoryName}'?`;
+          dialog.classList.add('active');
+        } else {
+          console.error("Confirmation dialog elements not found");
+        }
+      } catch (e) {
+        console.error("Error in removeCategory:", e);
       }
     }
 
     function confirmDeleteCategory(confirm) {
-      const dialog = document.getElementById('confirmationDialog');
-      if (dialog) {
-        dialog.classList.remove('active');
+      try {
+        const dialog = document.getElementById('confirmationDialog');
+        if (dialog) {
+          dialog.classList.remove('active');
+        }
+        if (confirm && pendingDeleteIndex !== null) {
+          const categoryToRemove = categories[pendingDeleteIndex];
+          categories.splice(pendingDeleteIndex, 1);
+          currentCategoryIndex = Math.min(pendingDeleteIndex, categories.length - 1);
+          if (categories.length === 0) {
+            categories = ['Default'];
+            currentCategoryIndex = 0;
+          }
+          try {
+            let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
+            delete categorySpecificData[categoryToRemove];
+            localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
+          } catch (e) {
+            console.error('Error removing category-specific data:', e);
+          }
+          saveCategories();
+          const categoryHeader = document.getElementById('category-header');
+          if (categoryHeader) {
+            categoryHeader.textContent = categories[currentCategoryIndex];
+            loadCategorySpecificData();
+          }
+        }
+        pendingDeleteIndex = null;
+      } catch (e) {
+        console.error("Error in confirmDeleteCategory:", e);
       }
-      if (confirm && pendingDeleteIndex !== null) {
-        const categoryToRemove = categories[pendingDeleteIndex];
-        categories.splice(pendingDeleteIndex, 1);
-        currentCategoryIndex = Math.min(pendingDeleteIndex, categories.length - 1);
-        if (categories.length === 0) {
-          categories = ['Default'];
-          currentCategoryIndex = 0;
-        }
-        try {
-          let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
-          delete categorySpecificData[categoryToRemove];
-          localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
-        } catch (e) {
-          console.error('Error removing category-specific data:', e);
-        }
-        saveCategories();
-        const categoryHeader = document.getElementById('category-header');
-        if (categoryHeader) {
-          categoryHeader.textContent = categories[currentCategoryIndex];
-          loadCategorySpecificData();
-        }
-      }
-      pendingDeleteIndex = null;
     }
 
     function parseTimeInput(input) {
-      if (!input) return 0;
-      input = input.trim().toLowerCase();
-      if (input.includes(':')) {
-        const parts = input.split(':').map(n => parseInt(n));
-        let minutes = 0, seconds = 0;
-        if (parts.length === 2) {
-          [minutes, seconds] = parts;
+      try {
+        if (!input) return 0;
+        input = input.trim().toLowerCase();
+        if (input.includes(':')) {
+          const parts = input.split(':').map(n => parseInt(n));
+          let minutes = 0, seconds = 0;
+          if (parts.length === 2) {
+            [minutes, seconds] = parts;
+          }
+          return (isNaN(minutes) ? 0 : minutes * 60) + (isNaN(seconds) ? 0 : seconds);
+        } else {
+          const num = parseInt(input);
+          return isNaN(num) ? 0 : num;
         }
-        return (isNaN(minutes) ? 0 : minutes * 60) + (isNaN(seconds) ? 0 : seconds);
-      } else {
-        const num = parseInt(input);
-        return isNaN(num) ? 0 : num;
+      } catch (e) {
+        console.error("Error in parseTimeInput:", e);
+        return 0;
       }
     }
 
@@ -1145,7 +1181,7 @@
         timer.interval = null;
         updateTimerDisplay();
         updateCircleProgress();
-        const startPause مهرجان = document.getElementById('start-pause-btn');
+        const startPauseBtn = document.getElementById('start-pause-btn');
         if (startPauseBtn) startPauseBtn.textContent = 'Start';
         const stage = document.getElementById('pb-stage')?.textContent || '';
         const date = document.getElementById('pb-date')?.textContent || '';
@@ -1504,7 +1540,7 @@
       }
     }
 
-    // Add event listeners for saving category-specific data on input changes
+    // Add event listeners for saving category-specific data
     function addSaveEventListeners() {
       try {
         const stage = document.getElementById('stage');
@@ -1514,485 +1550,36 @@
         const taskNotes = document.getElementById('task-notes');
         const notesInput = document.querySelector('#notes .notes-input');
         const summaryInput = document.querySelector('#summary .summary-input');
-        if (stage) stage.addEventListener('input',ರ
+        if (stage) stage.addEventListener('input', saveCategorySpecificData);
+        if (date) date.addEventListener('input', saveCategorySpecificData);
+        if (due) due.addEventListener('input', saveCategorySpecificData);
+        if (taskTime) taskTime.addEventListener('input', saveCategorySpecificData);
+        if (taskNotes) taskNotes.addEventListener('input', saveCategorySpecificData);
+        if (notesInput) notesInput.addEventListener('input', saveCategorySpecificData);
+        if (summaryInput) summaryInput.addEventListener('input', saveCategorySpecificData);
+      } catch (e) {
+        console.error("Error in addSaveEventListeners:", e);
+      }
+    }
 
-System: It looks like your message got cut off, but I understand you're looking to update the entire script for your Jiffy app, specifically removing push notification functionality and exploring lock screen widgets for iOS, as you're testing on an iPhone 14 with iOS 18. Since you mentioned not having Xcode and that the Jiffy Prompts widget isn't appearing in your phone's Customize Lock Screen mode, I'll address both the PWA script update and the widget issue comprehensively.
-
-### Addressing the Widget Issue
-You noted that the Jiffy Prompts widget isn't appearing in the Customize Lock Screen mode. This is expected because the widget (`JiffyWidget.swift`) is a native iOS component requiring Xcode to build and deploy. Without Xcode, the widget hasn't been compiled or installed on your iPhone, so it won't show up in the widget list. Below, I'll outline alternatives for deploying the widget without immediate Xcode access and update the PWA script to enhance in-app prompts as a robust fallback.
-
-### Updated PWA Script Plan
-Since lock screen widgets can't be embedded in a PWA, I'll refine the `index.html` to:
-- **Remove all push notification code** (e.g., `requestNotificationPermission`, `sendPromptNotification`).
-- **Enhance in-app prompts** to meet your requirements:
-  - **Sequential**: Cycle prompts uniquely in order (no repeats).
-  - **Single**: Display one prompt at a time in `promptDisplay`.
-  - **Passive**: No user interaction needed; auto-cycle.
-  - **Gentle**: Smooth fade transitions, configurable intervals (default 30s), subtle styling.
-- **Ensure stability**: Add error handling to prevent white screen issues.
-- **Preserve features**: Keep timer, categories, rewards, and notes intact.
-
-### Updated PWA Code
-Below is the complete `index.html` with notifications removed and in-app prompts optimized. This builds on the previous version (version_id="7c9f2b3d-8e6a-4f0b-9d2e-0f5d3e4a1b2c"), refining prompt behavior and UI.
-
-<xaiArtifact artifact_id="fea49a0a-8ba2-4d86-835a-c3e7bfccff13" artifact_version_id="7d3032bc-9a5f-47c4-80d4-b7c9c31ec95d" title="index.html" contentType="text/html">
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Jiffy</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Jiffy">
-  <link rel="apple-touch-icon" href="icon.png">
-  <style>
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
-      background-color: #1a1a1a;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-      font-size: 14px;
-      color: #fff;
-    }
-    .header {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 10px 15px;
-      background-color: #000;
-      color: #fff;
-      font-size: 1.1rem;
-      font-weight: 500;
-    }
-    .header .category-container {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .header .category-name {
-      display: inline-block;
-      touch-action: pan-y;
-    }
-    .header .category-input {
-      padding: 3px;
-      font-size: 1rem;
-      border: 1px solid #555;
-      border-radius: 3px;
-      background-color: #444;
-      color: #fff;
-      width: 200px;
-    }
-    .header button {
-      background: none;
-      border: none;
-      color: #999;
-      font-size: 1.5rem;
-      padding: 5px 8px;
-      cursor: pointer;
-    }
-    .header button:hover {
-      color: #fff;
-    }
-    .prompt-display {
-      background-color: #000;
-      padding: 8px 15px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 0.9rem;
-      color: #fff;
-      border-bottom: 1px solid #333;
-      opacity: 1;
-      transition: opacity 0.7s ease-in-out;
-      min-height: 30px;
-    }
-    .prompt-display.important {
-      color: #28a745;
-    }
-    .prompt-display.hidden {
-      opacity: 0;
-    }
-    .tabs {
-      display: flex;
-      background-color: #000;
-      padding: 6px 0;
-      overflow-x: auto;
-      white-space: nowrap;
-      -webkit-overflow-scrolling: touch;
-      border-bottom: 1px solid #333;
-      position: relative;
-      z-index: 1;
-    }
-    .tab {
-      padding: 6px 10px;
-      cursor: pointer;
-      color: #999;
-      font-size: 0.85rem;
-      flex: 1;
-      text-align: center;
-      min-width: 55px;
-      transition: color 0.2s ease;
-    }
-    .tab.active {
-      color: #fff;
-      border-bottom: 2px solid #fff;
-    }
-    .tab-content {
-      display: none;
-      padding: 10px;
-      flex: 1;
-      overflow-y: auto;
-      background-color: #1a1a1a;
-    }
-    .tab-content.active {
-      display: flex;
-      flex-direction: column;
-    }
-    .pb-details, .prompts-header, .rewards-header {
-      background-color: #333;
-      padding: 6px;
-      border-radius: 5px;
-      margin-bottom: 8px;
-      font-size: 0.8rem;
-      color: #ccc;
-    }
-    .pb-details {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 10px;
-      justify-content: space-between;
-    }
-    .pb-details div {
-      flex: 0 0 auto;
-      text-align: left;
-    }
-    .pb-controls {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 12px;
-      gap: 6px;
-    }
-    .pb-controls button, .prompts-header button, .rewards-header button {
-      background-color: #444;
-      color: #fff;
-      border: none;
-      padding: 6px 12px;
-      cursor: pointer;
-      border-radius: 5px;
-      font-size: 0.85rem;
-      touch-action: manipulation;
-    }
-    .pb-controls button:hover, .prompts-header button:hover, .rewards-header button:hover {
-      background-color: #555;
-    }
-    .pb-timer {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-    }
-    .timer-container {
-      position: relative;
-      width: 150px;
-      height: 150px;
-    }
-    .timer-display {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 1.6rem;
-      color: #fff;
-      font-weight: bold;
-    }
-    .timer-circle {
-      transform: rotate(90deg);
-    }
-    .timer-circle-bg {
-      fill: none;
-      stroke: #333;
-      stroke-width: 8;
-    }
-    .timer-circle-progress {
-      fill: none;
-      stroke: #28a745;
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1s linear;
-    }
-    .timer-circle-progress.overdue {
-      stroke: #d9534f;
-    }
-    .task-header {
-      margin-bottom: 12px;
-      padding: 8px;
-      background-color: #333;
-      border-radius: 5px;
-    }
-    .task-header .fields {
-      display:ukt-wrap: nowrap;
-      gap: 3px;
-      justify-content: space-between;
-    }
-    .task-header .field {
-      flex: 0 0 auto;
-      display: flex;
-      flex-direction: column;
-    }
-    .task-header label, .prompts-header label, .rewards-header label {
-      font-size: 0.75rem;
-      margin-bottom: 2px;
-      color: #ccc;
-    }
-    .task-header input, .prompts-header input, .rewards-header input {
-      padding: 3px;
-      font-size: 0.75rem;
-      border: 1px solid #555;
-      border-radius: 3px;
-      box-sizing: border-box;
-      width: 80px;
-      height: 24px;
-      background-color: #444;
-      color: #fff;
-    }
-    textarea {
-      flex: 1;
-      width: 100%;
-      padding: 6px;
-      font-size: 0.85rem;
-      border: 1px solid #555;
-      border-radius: 3px;
-      resize: none;
-      box-sizing: border-box;
-      background-color: #222;
-      color: #fff;
-    }
-    .prompts-header, .rewards-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .prompts-list, .rewards-list {
-      flex: 1;
-      overflow-y: auto;
-    }
-    .prompt-item, .reward-item {
-      display: flex;
-      align-items: center;
-      padding: 6px;
-      border-bottom: 1px solid #555;
-    }
-    .prompt-item span, .reward-item span {
-      flex: 1;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    .prompt-item input[type="text"], .reward-item input[type="text"] {
-      flex: 1;
-      padding: 3px;
-      font-size: 0.9rem;
-      border: 1px solid #555;
-      border-radius: 3px;
-      background-color: #444;
-      color: #fff;
-    }
-    .prompt-item input[type="checkbox"] {
-      margin-right: 5px;
-    }
-    .prompt-item label {
-      font-size: 0.75rem;
-      color: #ccc;
-      margin-right: 10px;
-    }
-    .prompt-item button, .reward-item button {
-      background-color: #555;
-      color: #fff;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 0.75rem;
-    }
-    .prompt-item button:hover, .reward-item button:hover {
-      background-color: #666;
-    }
-    .prompt-item.important span {
-      color: #28a745;
-    }
-    .notes-input, .summary-input {
-      width: 100%;
-      height: 100%;
-      padding: 6px;
-      font-size: 0.85rem;
-      border: 1px solid #555;
-      border-radius: 3px;
-      box-sizing: border-box;
-      background-color: #222;
-      color: #fff;
-      resize: none;
-    }
-    .reward-popup {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
-    .reward-popup.active {
-      display: flex;
-    }
-    .reward-box {
-      background-color: #333;
-      padding: 20px;
-      border-radius: 5px;
-      text-align: center;
-      color: #fff;
-      max-width: 300px;
-      width: 80%;
-    }
-    .reward-box p {
-      margin: 0 0 20px 0;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #28a745;
-    }
-    .reward-box button {
-      background-color: #444;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-    .reward-box button:hover {
-      background-color: #555;
-    }
-    .confirmation-dialog {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
-    .confirmation-dialog.active {
-      display: flex;
-    }
-    .confirmation-box {
-      background-color: #333;
-      padding: 20px;
-      border-radius: 5px;
-      text-align: center;
-      color: #fff;
-      max-width: 300px;
-      width: 80%;
-    }
-    .confirmation-box p {
-      margin: 0 0 20px 0;
-      font-size: 1rem;
-    }
-    .confirmation-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-    }
-    .confirmation-buttons button {
-      background-color: #444;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-    .confirmation-buttons button:hover {
-      background-color: #555;
-    }
-    .confirmation-buttons .yes-btn {
-      background-color: #d9534f;
-    }
-    .confirmation-buttons .yes-btn:hover {
-      background-color: #c9302c;
-    }
-    @media (max-width: 393px) {
-      body {
-        font-size: 13px;
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        console.log('DOM loaded');
+        const promptDisplay = document.getElementById('promptDisplay');
+        if (!promptDisplay) console.error("promptDisplay element not found");
+        loadCategories();
+        setupCategorySwipe();
+        loadGlobalData();
+        loadCategorySpecificData();
+        addSaveEventListeners();
+        resetTimer();
+        displaySequentialPrompt();
+        showTab('pb');
+      } catch (e) {
+        console.error('Initialization error:', e);
       }
-      .header {
-        padding: 8px 12px;
-        font-size: 1rem;
-      }
-      .header .category-container {
-        gap: 16px;
-      }
-      .header button {
-        font-size: 1.3rem;
-        padding: 4px 6px;
-      }
-      .header .category-input {
-        font-size: 0.9rem;
-        width: 160px;
-      }
-      .prompt-display {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-      }
-      .tabs {
-        padding: 5px 0;
-      }
-      .tab {
-        padding: 5px 8px;
-        font-size: 0.8rem;
-        min-width: 50px;
-      }
-      .tab-content {
-        padding: 8px;
-      }
-      .pb-details, .prompts-header, .rewards-header {
-        font-size: 0.75rem;
-        gap: 5px;
-      }
-      .pb-details {
-        flex-wrap: nowrap;
-        gap: 5px;
-      }
-      .pb-controls button, .prompts-header button, .rewards-header button {
-        padding: 5px 10px;
-        font-size: 0.8rem;
-      }
-      .timer-container {
-        width: 130px;
-        height: 130px;
-      }
-      .timer-display {
-        font-size: 1.4rem;
-      }
-      .task-header, .prompts-header, .rewards-header {
-        padding: 6px;
-      }
-      .task-header .fields {
-        gap: 2px;
-      }
-      .task-header input, .prompts-header input, .rewards-header input {
-        font-size: 0.7rem;
-        padding: 2px;
-        width: 75px;
-        height: 22px;
-      }
-      textarea {
-        font-size: 0.8rem;
-        padding: 5px;
+    });
+  </script>
+</body>
+</html>
