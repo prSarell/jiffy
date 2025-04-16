@@ -292,6 +292,7 @@
       color: #fff;
       resize: none;
     }
+    /* Reward Pop-Up Styles */
     .reward-popup {
       display: none;
       position: fixed;
@@ -334,6 +335,7 @@
     .reward-box button:hover {
       background-color: #555;
     }
+    /* Confirmation Dialog Styles */
     .confirmation-dialog {
       display: none;
       position: fixed;
@@ -498,6 +500,7 @@
   </style>
 </head>
 <body>
+  <!-- Confirmation Dialog -->
   <div class="confirmation-dialog" id="confirmationDialog">
     <div class="confirmation-box">
       <p id="confirmationMessage"></p>
@@ -507,12 +510,15 @@
       </div>
     </div>
   </div>
+
+  <!-- Reward Pop-Up -->
   <div class="reward-popup" id="rewardPopup">
     <div class="reward-box">
       <p id="rewardMessage"></p>
       <button onclick="closeRewardPopup()">Close</button>
     </div>
   </div>
+
   <div class="header">
     <div class="category-container">
       <button onclick="removeCategory()">-</button>
@@ -530,7 +536,7 @@
     <div class="tab" onclick="showTab('rewards')">Rewards</div>
   </div>
   <div id="tasks" class="tab-content">
-    <div class    <div class="task-header">
+    <div class="task-header">
       <div class="fields">
         <div class="field">
           <label for="stage">Stage</label>
@@ -583,7 +589,9 @@
       <button onclick="showAddPromptInput()">Add Prompt</button>
       <button onclick="requestNotificationPermission()">Allow Notifications</button>
     </div>
-    <div class="prompts-list" id="prompts-list"></div>
+    <div class="prompts-list" id="prompts-list">
+      <!-- Populated dynamically -->
+    </div>
   </div>
   <div id="notes" class="tab-content">
     <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
@@ -599,7 +607,9 @@
       </div>
       <button onclick="showAddRewardInput()">Add Reward</button>
     </div>
-    <div class="rewards-list" id="rewards-list"></div>
+    <div class="rewards-list" id="rewards-list">
+      <!-- Populated dynamically -->
+    </div>
   </div>
   <script>
     let timer = {
@@ -614,63 +624,86 @@
     let pendingDeleteIndex = null;
     let promptCounter = 0;
     let rewardCounter = 0;
-    let currentPromptIndex = 0;
-    let notificationInstance = null;
+    let currentPromptIndex = 0; // Track current prompt for sequential display
+    let notificationInstance = null; // Track active notification
 
+    // Request notification permission
     function requestNotificationPermission() {
-      if ("Notification" in window) {
-        Notification.requestPermission().then(permission => {
-          console.log(permission === "granted" ? "Notification permission granted" : "Notification permission denied");
-        }).catch(err => console.error("Error requesting notification permission:", err));
-      } else {
-        console.log("Notifications not supported in this browser");
+      try {
+        if ("Notification" in window) {
+          Notification.requestPermission().then(permission => {
+            console.log(permission === "granted" ? "Notification permission granted" : "Notification permission denied");
+          }).catch(err => {
+            console.error("Error requesting notification permission:", err);
+          });
+        } else {
+          console.log("Notifications not supported in this browser");
+        }
+      } catch (e) {
+        console.error("Error in requestNotificationPermission:", e);
       }
     }
 
+    // Send a notification with the prompt
     function sendPromptNotification(promptText) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        try {
-          if (notificationInstance) notificationInstance.close();
-          notificationInstance = new Notification("Jiffy Reminder", {
-            body: promptText,
+      try {
+        if ("Notification" in window && Notification.permission === "granted") {
+          // Close any existing notification
+          if (notificationInstance) {
+            notificationInstance.close();
+            notificationInstance = null;
+          }
+          // Create new notification
+          notificationInstance = new Notification(promptText, {
             icon: "icon.png",
-            requireInteraction: false
+            requireInteraction: false // Passive, no user action needed
           });
+          // Attempt to auto-close after 5 seconds (iOS may ignore)
           setTimeout(() => {
             if (notificationInstance) {
               notificationInstance.close();
               notificationInstance = null;
             }
           }, 5000);
-        } catch (e) {
-          console.error('Error sending notification:', e);
         }
+      } catch (e) {
+        console.error("Error in sendPromptNotification:", e);
       }
     }
 
+    // Get the next prompt in sequence
     function getNextPrompt() {
-      const prompts = getPrompts();
-      if (prompts.length === 0) return null;
       try {
+        const prompts = getPrompts();
+        if (!prompts || prompts.length === 0) {
+          console.log("No prompts available");
+          return null;
+        }
+        // Load current index from localStorage
         let storedIndex = localStorage.getItem('currentPromptIndex');
         currentPromptIndex = storedIndex !== null ? parseInt(storedIndex, 10) : 0;
-        if (currentPromptIndex >= prompts.length) currentPromptIndex = 0;
+        // Ensure index is valid
+        if (currentPromptIndex >= prompts.length) {
+          currentPromptIndex = 0;
+        }
         const prompt = prompts[currentPromptIndex];
+        // Increment and wrap around
         currentPromptIndex = (currentPromptIndex + 1) % prompts.length;
         localStorage.setItem('currentPromptIndex', currentPromptIndex);
         return prompt;
       } catch (e) {
-        console.error('Error getting next prompt:', e);
-        return prompts[0];
+        console.error("Error in getNextPrompt:", e);
+        return null;
       }
     }
 
+    // Display prompt in-app and trigger notifications when hidden
     function displaySequentialPrompt() {
       try {
         const prompt = getNextPrompt();
         const display = document.getElementById('promptDisplay');
         if (!display) {
-          console.error('promptDisplay element not found');
+          console.error("promptDisplay element not found");
           return;
         }
         if (prompt) {
@@ -680,81 +713,67 @@
           } else {
             display.classList.remove('important');
           }
-          if (document.hidden) {
-            sendPromptNotification(prompt.text);
-          }
         } else {
           display.textContent = '';
         }
+        // Schedule next prompt
         const intervalInput = document.getElementById('refresh-interval');
         if (!intervalInput) {
-          console.error('refresh-interval input not found');
+          console.error("refresh-interval input not found");
           return;
         }
         let intervalSeconds = parseTimeInput(intervalInput.value);
-        if (intervalSeconds <= 0) intervalSeconds = 60;
+        if (intervalSeconds <= 0) intervalSeconds = 60; // Default to 1 minute for gentle pacing
         const intervalMs = intervalSeconds * 1000;
         setTimeout(displaySequentialPrompt, intervalMs);
       } catch (e) {
-        console.error('Error in displaySequentialPrompt:', e);
+        console.error("Error in displaySequentialPrompt:", e);
       }
     }
 
+    // Reward Pop-Up Functions
     function showRewardPopup(rewardText) {
       const popup = document.getElementById('rewardPopup');
       const message = document.getElementById('rewardMessage');
-      if (popup && message) {
-        message.textContent = rewardText;
-        popup.classList.add('active');
-      } else {
-        console.error('Reward popup elements not found');
-      }
+      message.textContent = rewardText;
+      popup.classList.add('active');
     }
 
     function closeRewardPopup() {
       const popup = document.getElementById('rewardPopup');
-      if (popup) {
-        popup.classList.remove('active');
-      } else {
-        console.error('Reward popup not found');
-      }
+      popup.classList.remove('active');
     }
 
+    // Swipe functionality to switch between categories
     let touchStartX = 0;
     let touchEndX = 0;
     const categoryHeader = document.getElementById('category-header');
 
-    if (categoryHeader) {
-      categoryHeader.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-      });
+    categoryHeader.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
 
-      categoryHeader.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-      });
-    } else {
-      console.error('category-header element not found');
-    }
+    categoryHeader.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    });
 
     function handleSwipe() {
       const swipeThreshold = 50;
       if (touchEndX < touchStartX - swipeThreshold) {
+        // Swipe left - activate next category
         saveCategorySpecificData();
         currentCategoryIndex = (currentCategoryIndex + 1) % categories.length;
       } else if (touchEndX > touchStartX + swipeThreshold) {
+        // Swipe right - activate previous category
         saveCategorySpecificData();
         currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length;
       }
-      const categoryHeader = document.getElementById('category-header');
-      if (categoryHeader) {
-        categoryHeader.textContent = categories[currentCategoryIndex];
-        loadCategorySpecificData();
-      } else {
-        console.error('category-header element not found during swipe');
-      }
+      document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+      loadCategorySpecificData();
     }
 
+    // Save and Load Functions
     function saveGlobalData() {
       try {
         const prompts = getPrompts();
@@ -846,14 +865,14 @@
       try {
         const currentCategory = categories[currentCategoryIndex];
         const tasksData = {
-          stage: document.getElementById('stage')?.value,
-          date: document.getElementById('date')?.value,
-          due: document.getElementById('due')?.value,
-          time: document.getElementById('task-time')?.value,
-          notes: document.getElementById('task-notes')?.value
+          stage: document.getElementById('stage').value,
+          date: document.getElementById('date').value,
+          due: document.getElementById('due').value,
+          time: document.getElementById('task-time').value,
+          notes: document.getElementById('task-notes').value
         };
-        const notesData = document.querySelector('#notes .notes-input')?.value;
-        const summaryData = document.querySelector('#summary .summary-input')?.value;
+        const notesData = document.querySelector('#notes .notes-input').value;
+        const summaryData = document.querySelector('#summary .summary-input').value;
         const categoryData = {
           tasks: tasksData,
           notes: notesData,
@@ -882,38 +901,29 @@
         };
         const notesData = categoryData.notes || "";
         const summaryData = categoryData.summary || "";
-        const stageInput = document.getElementById('stage');
-        const dateInput = document.getElementById('date');
-        const dueInput = document.getElementById('due');
-        const taskTimeInput = document.getElementById('task-time');
-        const taskNotesInput = document.getElementById('task-notes');
-        if (stageInput) stageInput.value = tasksData.stage;
-        if (dateInput) dateInput.value = tasksData.date;
-        if (dueInput) dueInput.value = tasksData.due;
-        if (taskTimeInput) taskTimeInput.value = tasksData.time;
-        if (taskNotesInput) taskNotesInput.value = tasksData.notes;
+        // Populate Tasks tab
+        document.getElementById('stage').value = tasksData.stage;
+        document.getElementById('date').value = tasksData.date;
+        document.getElementById('due').value = tasksData.due;
+        document.getElementById('task-time').value = tasksData.time;
+        document.getElementById('task-notes').value = tasksData.notes;
+        // Update Pomo tab display
         updatePBDetails();
-        const notesInput = document.querySelector('#notes .notes-input');
-        const summaryInput = document.querySelector('#summary .summary-input');
-        if (notesInput) notesInput.value = notesData;
-        if (summaryInput) summaryInput.value = summaryData;
+        // Populate Notes tab
+        document.querySelector('#notes .notes-input').value = notesData;
+        // Populate Summary tab
+        document.querySelector('#summary .summary-input').value = summaryData;
         console.log(`Category-specific data loaded for ${currentCategory}:`, categoryData);
       } catch (e) {
         console.error('Error loading category-specific data:', e);
-        const stageInput = document.getElementById('stage');
-        const dateInput = document.getElementById('date');
-        const dueInput = document.getElementById('due');
-        const taskTimeInput = document.getElementById('task-time');
-        const taskNotesInput = document.getElementById('task-notes');
-        if (stageInput) stageInput.value = "Scales";
-        if (dateInput) dateInput.value = formatDate();
-        if (dueInput) dueInput.value = "TBC";
-        if (taskTimeInput) taskTimeInput.value = "";
-        if (taskNotesInput) taskNotesInput.value = "";
-        const notesInput = document.querySelector('#notes .notes-input');
-        const summaryInput = document.querySelector('#summary .summary-input');
-        if (notesInput) notesInput.value = "";
-        if (summaryInput) summaryInput.value = "";
+        // Fallback to defaults
+        document.getElementById('stage').value = "Scales";
+        document.getElementById('date').value = formatDate();
+        document.getElementById('due').value = "TBC";
+        document.getElementById('task-time').value = "";
+        document.getElementById('task-notes').value = "";
+        document.querySelector('#notes .notes-input').value = "";
+        document.querySelector('#summary .summary-input').value = "";
         updatePBDetails();
       }
     }
@@ -939,36 +949,24 @@
         if (currentCategoryIndex >= categories.length) {
           currentCategoryIndex = categories.length - 1;
         }
-        const categoryHeader = document.getElementById('category-header');
-        if (categoryHeader) {
-          categoryHeader.textContent = categories[currentCategoryIndex];
-        } else {
-          console.error('category-header element not found');
-        }
+        document.getElementById('category-header').textContent = categories[currentCategoryIndex];
         console.log('Categories loaded:', categoriesData);
       } catch (e) {
         console.error('Error loading categories:', e);
         categories = ['Home', 'Life', 'Work', 'School', 'Music Practice'];
         currentCategoryIndex = 4;
-        const categoryHeader = document.getElementById('category-header');
-        if (categoryHeader) {
-          categoryHeader.textContent = categories[currentCategoryIndex];
-        }
+        document.getElementById('category-header').textContent = categories[currentCategoryIndex];
       }
     }
 
     function addCategory() {
       const container = document.querySelector('.category-container');
-      if (container) {
-        container.innerHTML = `
-          <button onclick="removeCategory()">-</button>
-          <input type="text" class="category-input" placeholder="Enter new category..." onblur="saveCategory(this)" onkeypress="if(event.key === 'Enter') saveCategory(this)">
-          <button onclick="addCategory()">+</button>
-        `;
-        container.querySelector('input').focus();
-      } else {
-        console.error('category-container not found');
-      }
+      container.innerHTML = `
+        <button onclick="removeCategory()">-</button>
+        <input type="text" class="category-input" placeholder="Enter new category..." onblur="saveCategory(this)" onkeypress="if(event.key === 'Enter') saveCategory(this)">
+        <button onclick="addCategory()">+</button>
+      `;
+      container.querySelector('input').focus();
     }
 
     function saveCategory(input) {
@@ -980,26 +978,20 @@
         saveCategories();
       }
       const container = document.querySelector('.category-container');
-      if (container) {
-        container.innerHTML = `
-          <button onclick="removeCategory()">-</button>
-          <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
-          <button onclick="addCategory()">+</button>
-        `;
-        const newCategoryHeader = document.getElementById('category-header');
-        if (newCategoryHeader) {
-          newCategoryHeader.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-          });
-          newCategoryHeader.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-          });
-        }
-        loadCategorySpecificData();
-      } else {
-        console.error('category-container not found');
-      }
+      container.innerHTML = `
+        <button onclick="removeCategory()">-</button>
+        <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
+        <button onclick="addCategory()">+</button>
+      `;
+      const newCategoryHeader = document.getElementById('category-header');
+      newCategoryHeader.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+      newCategoryHeader.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+      loadCategorySpecificData();
     }
 
     function removeCategory() {
@@ -1011,19 +1003,13 @@
       const categoryName = categories[currentCategoryIndex];
       const dialog = document.getElementById('confirmationDialog');
       const message = document.getElementById('confirmationMessage');
-      if (dialog && message) {
-        message.textContent = `Are you sure you want to delete '${categoryName}'?`;
-        dialog.classList.add('active');
-      } else {
-        console.error('Confirmation dialog elements not found');
-      }
+      message.textContent = `Are you sure you want to delete '${categoryName}'?`;
+      dialog.classList.add('active');
     }
 
     function confirmDeleteCategory(confirm) {
       const dialog = document.getElementById('confirmationDialog');
-      if (dialog) {
-        dialog.classList.remove('active');
-      }
+      dialog.classList.remove('active');
       if (confirm && pendingDeleteIndex !== null) {
         const categoryToRemove = categories[pendingDeleteIndex];
         categories.splice(pendingDeleteIndex, 1);
@@ -1040,11 +1026,8 @@
           console.error('Error removing category-specific data:', e);
         }
         saveCategories();
-        const categoryHeader = document.getElementById('category-header');
-        if (categoryHeader) {
-          categoryHeader.textContent = categories[currentCategoryIndex];
-          loadCategorySpecificData();
-        }
+        document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+        loadCategorySpecificData();
       }
       pendingDeleteIndex = null;
     }
@@ -1091,23 +1074,16 @@
     }
 
     function updatePBDetails() {
-      const pbStage = document.getElementById('pb-stage');
-      const pbDate = document.getElementById('pb-date');
-      const pbDue = document.getElementById('pb-due');
-      const pbTime = document.getElementById('pb-time');
-      if (pbStage && pbDate && pbDue && pbTime) {
-        pbStage.textContent = document.getElementById('stage')?.value || 'N/A';
-        pbDate.textContent = document.getElementById('date')?.value || 'N/A';
-        pbDue.textContent = document.getElementById('due')?.value || 'N/A';
-        pbTime.textContent = document.getElementById('task-time')?.value || 'N/A';
-      } else {
-        console.error('PB details elements not found');
-      }
+      document.getElementById('pb-stage').textContent = document.getElementById('stage').value || 'N/A';
+      document.getElementById('pb-date').textContent = document.getElementById('date').value || 'N/A';
+      document.getElementById('pb-due').textContent = document.getElementById('due').value || 'N/A';
+      document.getElementById('pb-time').textContent = document.getElementById('task-time').value || 'N/A';
     }
 
     function toggleStartPause() {
       if (!timer.isRunning) {
-        timer.totalSeconds = parseTimeInput(document.getElementById('task-time')?.value);
+        // Start the timer
+        timer.totalSeconds = parseTimeInput(document.getElementById('task-time').value);
         if (timer.totalSeconds <= 0) {
           alert('Please enter a valid time in the Tasks tab (e.g., "1:30:00" or "30 min").');
           return;
@@ -1122,12 +1098,11 @@
             updateCircleProgress();
           }
         }, 1000);
-        const startPauseBtn = document.getElementById('start-pause-btn');
-        if (startPauseBtn) startPauseBtn.textContent = 'Pause';
+        document.getElementById('start-pause-btn').textContent = 'Pause';
       } else {
+        // Pause or resume the timer
         timer.isPaused = !timer.isPaused;
-        const startPauseBtn = document.getElementById('start-pause-btn');
-        if (startPauseBtn) startPauseBtn.textContent = timer.isPaused ? 'Resume' : 'Pause';
+        document.getElementById('start-pause-btn').textContent = timer.isPaused ? 'Resume' : 'Pause';
       }
     }
 
@@ -1135,6 +1110,7 @@
       clearInterval(timer.interval);
       timer.isRunning = false;
       timer.isPaused = false;
+      // Check if completed early
       if (timer.seconds > 0) {
         const rewards = getRewards();
         if (rewards.length > 0) {
@@ -1147,31 +1123,28 @@
       timer.interval = null;
       updateTimerDisplay();
       updateCircleProgress();
-      const startPauseBtn = document.getElementById('start-pause-btn');
-      if (startPauseBtn) startPauseBtn.textContent = 'Start';
-      const stage = document.getElementById('pb-stage')?.textContent;
-      const date = document.getElementById('pb-date')?.textContent;
-      const due = document.getElementById('pb-due')?.textContent;
-      const time = document.getElementById('pb-time')?.textContent;
+      document.getElementById('start-pause-btn').textContent = 'Start';
+      // Append Pomo data to Summary tab
+      const stage = document.getElementById('pb-stage').textContent;
+      const date = document.getElementById('pb-date').textContent;
+      const due = document.getElementById('pb-due').textContent;
+      const time = document.getElementById('pb-time').textContent;
       const summaryEntry = `Completed Task - Stage: ${stage}, Date: ${date}, Due: ${due}, Time: ${time}\n`;
       const summaryTextarea = document.querySelector('#summary .summary-input');
-      if (summaryTextarea) {
-        summaryTextarea.value = (summaryTextarea.value ? summaryTextarea.value + '\n' : '') + summaryEntry;
-        saveCategorySpecificData();
-      }
+      summaryTextarea.value = (summaryTextarea.value ? summaryTextarea.value + '\n' : '') + summaryEntry;
+      saveCategorySpecificData();
     }
 
     function resetTimer() {
       clearInterval(timer.interval);
       timer.isRunning = false;
       timer.isPaused = false;
-      timer.totalSeconds = parseTimeInput(document.getElementById('task-time')?.value);
+      timer.totalSeconds = parseTimeInput(document.getElementById('task-time').value);
       timer.seconds = timer.totalSeconds;
       timer.interval = null;
       updateTimerDisplay();
       updateCircleProgress();
-      const startPauseBtn = document.getElementById('start-pause-btn');
-      if (startPauseBtn) startPauseBtn.textContent = 'Start';
+      document.getElementById('start-pause-btn').textContent = 'Start';
     }
 
     function updateTimerDisplay() {
@@ -1180,24 +1153,21 @@
       const minutes = Math.floor((absSeconds % 3600) / 60);
       const seconds = absSeconds % 60;
       const timeStr = `${timer.seconds < 0 ? '-' : ''}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      const pbTimer = document.getElementById('pb-timer');
-      if (pbTimer) pbTimer.textContent = timeStr;
+      document.getElementById('pb-timer').textContent = timeStr;
     }
 
     function updateCircleProgress() {
       const circle = document.getElementById('timer-circle-progress');
-      if (circle) {
-        const circumference = 596.9;
-        let progress = timer.totalSeconds ? timer.seconds / timer.totalSeconds : 1;
-        if (progress < 0) {
-          progress = 0;
-          circle.classList.add('overdue');
-        } else {
-          circle.classList.remove('overdue');
-        }
-        const offset = -circumference * (1 - progress);
-        circle.setAttribute('stroke-dashoffset', offset);
+      const circumference = 596.9;
+      let progress = timer.totalSeconds ? timer.seconds / timer.totalSeconds : 1;
+      if (progress < 0) {
+        progress = 0;
+        circle.classList.add('overdue');
+      } else {
+        circle.classList.remove('overdue');
       }
+      const offset = -circumference * (1 - progress);
+      circle.setAttribute('stroke-dashoffset', offset);
     }
 
     function formatDate() {
@@ -1213,53 +1183,46 @@
       return `${monthNames[date.getMonth()]} ${day}${suffix}`;
     }
 
+    // Prompt Display Functions
     function getPrompts() {
       const promptItems = document.querySelectorAll('#prompts-list .prompt-item');
       const prompts = [];
       promptItems.forEach(item => {
-        const text = item.querySelector('span')?.textContent;
+        const text = item.querySelector('span').textContent;
         const isImportant = item.classList.contains('important');
-        if (text) prompts.push({ text, isImportant });
+        prompts.push({ text, isImportant });
       });
       return prompts;
     }
 
     function populatePrompts(prompts) {
       const list = document.getElementById('prompts-list');
-      if (list) {
-        list.innerHTML = '';
-        prompts.forEach((prompt, index) => {
-          const promptDiv = document.createElement('div');
-          promptDiv.className = 'prompt-item';
-          if (prompt.isImportant) {
-            promptDiv.classList.add('important');
-          }
-          promptDiv.innerHTML = `
-            <span ondblclick="editPrompt(this)">${prompt.text}</span>
-            <input type="checkbox" id="important-${index}" ${prompt.isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
-            <label for="important-${index}">Important</label>
-            <button onclick="deletePrompt(this)">Delete</button>
-          `;
-          list.appendChild(promptDiv);
-        });
-      } else {
-        console.error('prompts-list element not found');
-      }
+      list.innerHTML = '';
+      prompts.forEach((prompt, index) => {
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'prompt-item';
+        if (prompt.isImportant) {
+          promptDiv.classList.add('important');
+        }
+        promptDiv.innerHTML = `
+          <span ondblclick="editPrompt(this)">${prompt.text}</span>
+          <input type="checkbox" id="important-${index}" ${prompt.isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+          <label for="important-${index}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        list.appendChild(promptDiv);
+      });
     }
 
     function showAddPromptInput() {
       const list = document.getElementById('prompts-list');
-      if (list) {
-        const inputDiv = document.createElement('div');
-        inputDiv.className = 'prompt-item';
-        inputDiv.innerHTML = `
-          <input type="text" placeholder="Enter new prompt..." onblur="addPrompt(this)" onkeypress="if(event.key === 'Enter') addPrompt(this)">
-        `;
-        list.insertBefore(inputDiv, list.firstChild);
-        inputDiv.querySelector('input').focus();
-      } else {
-        console.error('prompts-list element not found');
-      }
+      const inputDiv = document.createElement('div');
+      inputDiv.className = 'prompt-item';
+      inputDiv.innerHTML = `
+        <input type="text" placeholder="Enter new prompt..." onblur="addPrompt(this)" onkeypress="if(event.key === 'Enter') addPrompt(this)">
+      `;
+      list.insertBefore(inputDiv, list.firstChild);
+      inputDiv.querySelector('input').focus();
     }
 
     function addPrompt(input) {
@@ -1332,47 +1295,40 @@
       saveGlobalData();
     }
 
+    // Rewards Tab Functions
     function getRewards() {
       const rewardItems = document.querySelectorAll('#rewards-list .reward-item');
       const rewards = [];
       rewardItems.forEach(item => {
-        const text = item.querySelector('span')?.textContent;
-        if (text) rewards.push(text);
+        const text = item.querySelector('span').textContent;
+        rewards.push(text);
       });
       return rewards;
     }
 
     function populateRewards(rewards) {
       const list = document.getElementById('rewards-list');
-      if (list) {
-        list.innerHTML = '';
-        rewards.forEach((reward, index) => {
-          const rewardDiv = document.createElement('div');
-          rewardDiv.className = 'reward-item';
-          rewardDiv.innerHTML = `
-            <span ondblclick="editReward(this)">${reward}</span>
-            <button onclick="deleteReward(this)">Delete</button>
-          `;
-          list.appendChild(rewardDiv);
-        });
-      } else {
-        console.error('rewards-list element not found');
-      }
+      list.innerHTML = '';
+      rewards.forEach((reward, index) => {
+        const rewardDiv = document.createElement('div');
+        rewardDiv.className = 'reward-item';
+        rewardDiv.innerHTML = `
+          <span ondblclick="editReward(this)">${reward}</span>
+          <button onclick="deleteReward(this)">Delete</button>
+        `;
+        list.appendChild(rewardDiv);
+      });
     }
 
     function showAddRewardInput() {
       const list = document.getElementById('rewards-list');
-      if (list) {
-        const inputDiv = document.createElement('div');
-        inputDiv.className = 'reward-item';
-        inputDiv.innerHTML = `
-          <input type="text" placeholder="Enter new reward..." onblur="addReward(this)" onkeypress="if(event.key === 'Enter') addReward(this)">
-        `;
-        list.insertBefore(inputDiv, list.firstChild);
-        inputDiv.querySelector('input').focus();
-      } else {
-        console.error('rewards-list element not found');
-      }
+      const inputDiv = document.createElement('div');
+      inputDiv.className = 'reward-item';
+      inputDiv.innerHTML = `
+        <input type="text" placeholder="Enter new reward..." onblur="addReward(this)" onkeypress="if(event.key === 'Enter') addReward(this)">
+      `;
+      list.insertBefore(inputDiv, list.firstChild);
+      inputDiv.querySelector('input').focus();
     }
 
     function addReward(input) {
@@ -1422,28 +1378,24 @@
       saveGlobalData();
     }
 
+    // Add event listeners for saving category-specific data on input changes
     function addSaveEventListeners() {
-      const stage = document.getElementById('stage');
-      const date = document.getElementById('date');
-      const due = document.getElementById('due');
-      const taskTime = document.getElementById('task-time');
-      const taskNotes = document.getElementById('task-notes');
-      const notesInput = document.querySelector('#notes .notes-input');
-      const summaryInput = document.querySelector('#summary .summary-input');
-      if (stage) stage.addEventListener('input', saveCategorySpecificData);
-      if (date) date.addEventListener('input', saveCategorySpecificData);
-      if (due) due.addEventListener('input', saveCategorySpecificData);
-      if (taskTime) taskTime.addEventListener('input', saveCategorySpecificData);
-      if (taskNotes) taskNotes.addEventListener('input', saveCategorySpecificData);
-      if (notesInput) notesInput.addEventListener('input', saveCategorySpecificData);
-      if (summaryInput) summaryInput.addEventListener('input', saveCategorySpecificData);
+      // Tasks tab inputs
+      document.getElementById('stage').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('date').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('due').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('task-time').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('task-notes').addEventListener('input', saveCategorySpecificData);
+      // Notes tab textarea
+      document.querySelector('#notes .notes-input').addEventListener('input', saveCategorySpecificData);
+      // Summary tab textarea
+      document.querySelector('#summary .summary-input').addEventListener('input', saveCategorySpecificData);
     }
 
+    // Initialize the app
     document.addEventListener('DOMContentLoaded', () => {
       try {
         console.log('DOM loaded');
-        const promptDisplay = document.getElementById('promptDisplay');
-        if (!promptDisplay) console.error('promptDisplay element not found');
         loadCategories();
         loadGlobalData();
         loadCategorySpecificData();
@@ -1452,15 +1404,18 @@
         requestNotificationPermission();
         displaySequentialPrompt();
         showTab('pb');
+        // Add visibility change listener for lock screen approximation
         document.addEventListener('visibilitychange', () => {
           try {
             console.log('Visibility changed, hidden:', document.hidden);
             if (document.hidden) {
               const prompt = getNextPrompt();
-              if (prompt) sendPromptNotification(prompt.text);
+              if (prompt) {
+                sendPromptNotification(prompt.text);
+              }
             }
           } catch (e) {
-            console.error('Error in visibilitychange:', e);
+            console.error('Error in visibilitychange handler:', e);
           }
         });
       } catch (e) {
