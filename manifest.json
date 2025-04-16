@@ -1,13 +1,13 @@
 {
   "name": "Jiffy",
   "short_name": "Jiffy",
-  "start_url": "index.html",
+  "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#f0f0f0",
-  "theme_color": "#333",
+  "background_color": "#1a1a1a",
+  "theme_color": "#000",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "/icon.png",
       "sizes": "192x192",
       "type": "image/png"
     }
