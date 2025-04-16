@@ -361,3 +361,999 @@
       width: 80%;
     }
     .confirmation-box p {
+      margin: 0 0 20px 0;
+      font-size: 1rem;
+    }
+    .confirmation-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .confirmation-buttons button {
+      background-color: #444;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .confirmation-buttons button:hover {
+      background-color: #555;
+    }
+    .confirmation-buttons .yes-btn {
+      background-color: #d9534f;
+    }
+    .confirmation-buttons .yes-btn:hover {
+      background-color: #c9302c;
+    }
+    @media (max-width: 393px) {
+      body {
+        font-size: 13px;
+      }
+      .header {
+        padding: 8px 12px;
+        font-size: 1rem;
+      }
+      .header .category-container {
+        gap: 16px;
+      }
+      .header button {
+        font-size: 1.3rem;
+        padding: 4px 6px;
+      }
+      .header .category-input {
+        font-size: 0.9rem;
+        width: 160px;
+      }
+      .prompt-display {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
+      .tabs {
+        padding: 5px 0;
+      }
+      .tab {
+        padding: 5px 8px;
+        font-size: 0.8rem;
+        min-width: 50px;
+      }
+      .tab-content {
+        padding: 8px;
+      }
+      .pb-details, .prompts-header, .rewards-header {
+        font-size: 0.75rem;
+        gap: 5px;
+      }
+      .pb-details {
+        flex-wrap: nowrap;
+        gap: 5px;
+      }
+      .pb-controls button, .prompts-header button, .rewards-header button {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+      }
+      .timer-container {
+        width: 130px;
+        height: 130px;
+      }
+      .timer-display {
+        font-size: 1.4rem;
+      }
+      .task-header, .prompts-header, .rewards-header {
+        padding: 6px;
+      }
+      .task-header .fields {
+        gap: 2px;
+      }
+      .task-header input, .prompts-header input, .rewards-header input {
+        font-size: 0.7rem;
+        padding: 2px;
+        width: 75px;
+        height: 22px;
+      }
+      textarea {
+        font-size: 0.8rem;
+        padding: 5px;
+      }
+      .prompt-item, .reward-item {
+        padding: 5px;
+      }
+      .prompt-item span, .reward-item span {
+        font-size: 0.85rem;
+      }
+      .prompt-item input[type="text"], .reward-item input[type="text"] {
+        font-size: 0.85rem;
+      }
+      .prompt-item label {
+        font-size: 0.7rem;
+      }
+      .prompt-item button, .reward-item button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+      }
+      .confirmation-box {
+        padding: 15px;
+      }
+      .confirmation-box p {
+        font-size: 0.9rem;
+      }
+      .confirmation-buttons button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
+      .reward-box {
+        padding: 15px;
+      }
+      .reward-box p {
+        font-size: 1rem;
+      }
+      .reward-box button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
+      .notes-input, .summary-input {
+        font-size: 0.8rem;
+        padding: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Confirmation Dialog -->
+  <div class="confirmation-dialog" id="confirmationDialog">
+    <div class="confirmation-box">
+      <p id="confirmationMessage"></p>
+      <div class="confirmation-buttons">
+        <button class="yes-btn" onclick="confirmDeleteCategory(true)">Yes</button>
+        <button onclick="confirmDeleteCategory(false)">No</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reward Pop-Up -->
+  <div class="reward-popup" id="rewardPopup">
+    <div class="reward-box">
+      <p id="rewardMessage"></p>
+      <button onclick="closeRewardPopup()">Close</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="category-container">
+      <button onclick="removeCategory()">-</button>
+      <span id="category-header" class="category-name"></span>
+      <button onclick="addCategory()">+</button>
+    </div>
+  </div>
+  <div class="prompt-display" id="promptDisplay"></div>
+  <div class="tabs">
+    <div class="tab" onclick="showTab('tasks')">Tasks</div>
+    <div class="tab active" onclick="showTab('pb')">Pomo</div>
+    <div class="tab" onclick="showTab('prompts')">Prompts</div>
+    <div class="tab" onclick="showTab('notes')">Notes</div>
+    <div class="tab" onclick="showTab('summary')">Summary</div>
+    <div class="tab" onclick="showTab('rewards')">Rewards</div>
+  </div>
+  <div id="tasks" class="tab-content">
+    <div class="task-header">
+      <div class="fields">
+        <div class="field">
+          <label for="stage">Stage</label>
+          <input id="stage" type="text" value="Scales">
+        </div>
+        <div class="field">
+          <label for="date">Date</label>
+          <input id="date" type="text" readonly>
+        </div>
+        <div class="field">
+          <label for="due">Due</label>
+          <input id="due" type="text" value="TBC">
+        </div>
+        <div class="field">
+          <label for="task-time">Time</label>
+          <input id="task-time" type="text" placeholder="e.g., 1:30:00 or 30 min">
+        </div>
+      </div>
+    </div>
+    <textarea id="task-notes" placeholder="Write your notes here..."></textarea>
+  </div>
+  <div id="pb" class="tab-content active">
+    <div class="pb-details">
+      <div>Stage: <span id="pb-stage"></span></div>
+      <div>Date: <span id="pb-date"></span></div>
+      <div>Due: <span id="pb-due"></span></div>
+      <div>Time: <span id="pb-time"></span></div>
+    </div>
+    <div class="pb-controls">
+      <button id="start-pause-btn" onclick="toggleStartPause()">Start</button>
+      <button onclick="completeTimer()">Complete</button>
+      <button onclick="resetTimer()">Reset</button>
+    </div>
+    <div class="pb-timer">
+      <div class="timer-container">
+        <svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" class="timer-circle">
+          <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
+          <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
+        </svg>
+        <div id="pb-timer" class="timer-display">00:00:00</div>
+      </div>
+    </div>
+  </div>
+  <div id="prompts" class="tab-content">
+    <div class="prompts-header">
+      <div>
+        <label for="refresh-interval">Refresh Interval (MM:SS)</label>
+        <input id="refresh-interval" type="text" value="00:30">
+      </div>
+      <button onclick="showAddPromptInput()">Add Prompt</button>
+      <button onclick="requestNotificationPermission()">Allow Notifications</button>
+    </div>
+    <div class="prompts-list" id="prompts-list">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+  <div id="notes" class="tab-content">
+    <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
+  </div>
+  <div id="summary" class="tab-content">
+    <textarea class="summary-input" placeholder="Summary notes will appear here..."></textarea>
+  </div>
+  <div id="rewards" class="tab-content">
+    <div class="rewards-header">
+      <div>
+        <label for="rewards-refresh-interval">Refresh Interval (MM:SS)</label>
+        <input id="rewards-refresh-interval" type="text" value="00:30">
+      </div>
+      <button onclick="showAddRewardInput()">Add Reward</button>
+    </div>
+    <div class="rewards-list" id="rewards-list">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+  <script>
+    let timer = {
+      totalSeconds: 0,
+      seconds: 0,
+      isRunning: false,
+      isPaused: false,
+      interval: null
+    };
+    let categories = ['Home', 'Life', 'Work', 'School', 'Music Practice'];
+    let currentCategoryIndex = 4;
+    let pendingDeleteIndex = null;
+    let promptCounter = 0;
+    let rewardCounter = 0;
+
+    // Request notification permission
+    function requestNotificationPermission() {
+      if ("Notification" in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            console.log("Notification permission granted");
+          } else {
+            console.log("Notification permission denied");
+          }
+        }).catch(err => {
+          console.error("Error requesting notification permission:", err);
+        });
+      } else {
+        console.log("Notifications not supported in this browser");
+      }
+    }
+
+    // Send a notification with the prompt
+    function sendPromptNotification(promptText) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(promptText, {
+          body: "Prompt Reminder",
+          icon: "icon.png"
+        });
+      }
+    }
+
+    // Reward Pop-Up Functions
+    function showRewardPopup(rewardText) {
+      const popup = document.getElementById('rewardPopup');
+      const message = document.getElementById('rewardMessage');
+      message.textContent = rewardText;
+      popup.classList.add('active');
+    }
+
+    function closeRewardPopup() {
+      const popup = document.getElementById('rewardPopup');
+      popup.classList.remove('active');
+    }
+
+    // Swipe functionality to switch between categories
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const categoryHeader = document.getElementById('category-header');
+
+    categoryHeader.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+
+    categoryHeader.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    });
+
+    function handleSwipe() {
+      const swipeThreshold = 50;
+      if (touchEndX < touchStartX - swipeThreshold) {
+        // Swipe left - activate next category
+        saveCategorySpecificData();
+        currentCategoryIndex = (currentCategoryIndex + 1) % categories.length;
+      } else if (touchEndX > touchStartX + swipeThreshold) {
+        // Swipe right - activate previous category
+        saveCategorySpecificData();
+        currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length;
+      }
+      document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+      loadCategorySpecificData();
+    }
+
+    // Save and Load Functions
+    function saveGlobalData() {
+      try {
+        const prompts = getPrompts();
+        const rewards = getRewards();
+        const globalData = { prompts, rewards };
+        localStorage.setItem('globalData', JSON.stringify(globalData));
+        console.log('Global data saved:', globalData);
+      } catch (e) {
+        console.error('Error saving global data:', e);
+      }
+    }
+
+    function loadGlobalData() {
+      try {
+        const globalData = JSON.parse(localStorage.getItem('globalData')) || {};
+        const prompts = globalData.prompts || [
+          { text: "PAY PARKING FINE!!!", isImportant: true },
+          { text: "Get milk", isImportant: false },
+          { text: "Breathe", isImportant: false },
+          { text: "2pm Mtg!!!", isImportant: true }
+        ];
+        const rewards = globalData.rewards || [
+          "Great job, you smashed it!",
+          "You're killing it!",
+          "Fantastic work!",
+          "On fire",
+          "Yeah Bouy!",
+          "Fernsteuerung!",
+          "Way to go, superstar!",
+          "Crushing it!",
+          "Nailed it!",
+          "Bravo, that was amazing!",
+          "Impressive work, well done!",
+          "Smashing work Gromit!",
+          "Superb effort, keep shining!",
+          "You're unstoppable!",
+          "What a triumph!",
+          "Amazing job, keep up the great work!",
+          "Incredible, you're a rockstar!",
+          "Sensational performance!",
+          "Your productivity is inspiring!",
+          "Mike, you F*cken LEGEND!!!",
+          "They said you'd never make it, but you finally came through!",
+          "You’re a wizard Harry!"
+        ];
+        populatePrompts(prompts);
+        populateRewards(rewards);
+        promptCounter = prompts.length;
+        rewardCounter = rewards.length;
+        console.log('Global data loaded:', globalData);
+      } catch (e) {
+        console.error('Error loading global data:', e);
+        populatePrompts([
+          { text: "PAY PARKING FINE!!!", isImportant: true },
+          { text: "Get milk", isImportant: false },
+          { text: "Breathe", isImportant: false },
+          { text: "2pm Mtg!!!", isImportant: true }
+        ]);
+        populateRewards([
+          "Great job, you smashed it!",
+          "You're killing it!",
+          "Fantastic work!",
+          "On fire",
+          "Yeah Bouy!",
+          "Fernsteuerung!",
+          "Way to go, superstar!",
+          "Crushing it!",
+          "Nailed it!",
+          "Bravo, that was amazing!",
+          "Impressive work, well done!",
+          "Smashing work Gromit!",
+          "Superb effort, keep shining!",
+          "You're unstoppable!",
+          "What a triumph!",
+          "Amazing job, keep up the great work!",
+          "Incredible, you're a rockstar!",
+          "Sensational performance!",
+          "Your productivity is inspiring!",
+          "Mike, you F*cken LEGEND!!!",
+          "They said you'd never make it, but you finally came through!",
+          "You’re a wizard Harry!"
+        ]);
+        promptCounter = 4;
+        rewardCounter = 22;
+      }
+    }
+
+    function saveCategorySpecificData() {
+      try {
+        const currentCategory = categories[currentCategoryIndex];
+        const tasksData = {
+          stage: document.getElementById('stage').value,
+          date: document.getElementById('date').value,
+          due: document.getElementById('due').value,
+          time: document.getElementById('task-time').value,
+          notes: document.getElementById('task-notes').value
+        };
+        const notesData = document.querySelector('#notes .notes-input').value;
+        const summaryData = document.querySelector('#summary .summary-input').value;
+        const categoryData = {
+          tasks: tasksData,
+          notes: notesData,
+          summary: summaryData
+        };
+        let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
+        categorySpecificData[currentCategory] = categoryData;
+        localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
+        console.log(`Category-specific data saved for ${currentCategory}:`, categoryData);
+      } catch (e) {
+        console.error('Error saving category-specific data:', e);
+      }
+    }
+
+    function loadCategorySpecificData() {
+      try {
+        const currentCategory = categories[currentCategoryIndex];
+        const categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
+        const categoryData = categorySpecificData[currentCategory] || {};
+        const tasksData = categoryData.tasks || {
+          stage: "Scales",
+          date: formatDate(),
+          due: "TBC",
+          time: "",
+          notes: ""
+        };
+        const notesData = categoryData.notes || "";
+        const summaryData = categoryData.summary || "";
+        // Populate Tasks tab
+        document.getElementById('stage').value = tasksData.stage;
+        document.getElementById('date').value = tasksData.date;
+        document.getElementById('due').value = tasksData.due;
+        document.getElementById('task-time').value = tasksData.time;
+        document.getElementById('task-notes').value = tasksData.notes;
+        // Update Pomo tab display
+        updatePBDetails();
+        // Populate Notes tab
+        document.querySelector('#notes .notes-input').value = notesData;
+        // Populate Summary tab
+        document.querySelector('#summary .summary-input').value = summaryData;
+        console.log(`Category-specific data loaded for ${currentCategory}:`, categoryData);
+      } catch (e) {
+        console.error('Error loading category-specific data:', e);
+        // Fallback to defaults
+        document.getElementById('stage').value = "Scales";
+        document.getElementById('date').value = formatDate();
+        document.getElementById('due').value = "TBC";
+        document.getElementById('task-time').value = "";
+        document.getElementById('task-notes').value = "";
+        document.querySelector('#notes .notes-input').value = "";
+        document.querySelector('#summary .summary-input').value = "";
+        updatePBDetails();
+      }
+    }
+
+    function saveCategories() {
+      try {
+        const categoriesData = {
+          categories: categories,
+          currentCategoryIndex: currentCategoryIndex
+        };
+        localStorage.setItem('categoriesData', JSON.stringify(categoriesData));
+        console.log('Categories saved:', categoriesData);
+      } catch (e) {
+        console.error('Error saving categories:', e);
+      }
+    }
+
+    function loadCategories() {
+      try {
+        const categoriesData = JSON.parse(localStorage.getItem('categoriesData')) || {};
+        categories = categoriesData.categories || ['Home', 'Life', 'Work', 'School', 'Music Practice'];
+        currentCategoryIndex = categoriesData.currentCategoryIndex || 4;
+        if (currentCategoryIndex >= categories.length) {
+          currentCategoryIndex = categories.length - 1;
+        }
+        document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+        console.log('Categories loaded:', categoriesData);
+      } catch (e) {
+        console.error('Error loading categories:', e);
+        categories = ['Home', 'Life', 'Work', 'School', 'Music Practice'];
+        currentCategoryIndex = 4;
+        document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+      }
+    }
+
+    function addCategory() {
+      const container = document.querySelector('.category-container');
+      container.innerHTML = `
+        <button onclick="removeCategory()">-</button>
+        <input type="text" class="category-input" placeholder="Enter new category..." onblur="saveCategory(this)" onkeypress="if(event.key === 'Enter') saveCategory(this)">
+        <button onclick="addCategory()">+</button>
+      `;
+      container.querySelector('input').focus();
+    }
+
+    function saveCategory(input) {
+      const newCategory = input.value.trim();
+      if (newCategory) {
+        categories.push(newCategory);
+        saveCategorySpecificData();
+        currentCategoryIndex = categories.length - 1;
+        saveCategories();
+      }
+      const container = document.querySelector('.category-container');
+      container.innerHTML = `
+        <button onclick="removeCategory()">-</button>
+        <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
+        <button onclick="addCategory()">+</button>
+      `;
+      const newCategoryHeader = document.getElementById('category-header');
+      newCategoryHeader.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+      newCategoryHeader.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+      loadCategorySpecificData();
+    }
+
+    function removeCategory() {
+      if (categories.length <= 1) {
+        alert('Cannot remove the last category. At least one category is required.');
+        return;
+      }
+      pendingDeleteIndex = currentCategoryIndex;
+      const categoryName = categories[currentCategoryIndex];
+      const dialog = document.getElementById('confirmationDialog');
+      const message = document.getElementById('confirmationMessage');
+      message.textContent = `Are you sure you want to delete '${categoryName}'?`;
+      dialog.classList.add('active');
+    }
+
+    function confirmDeleteCategory(confirm) {
+      const dialog = document.getElementById('confirmationDialog');
+      dialog.classList.remove('active');
+      if (confirm && pendingDeleteIndex !== null) {
+        const categoryToRemove = categories[pendingDeleteIndex];
+        categories.splice(pendingDeleteIndex, 1);
+        currentCategoryIndex = Math.min(pendingDeleteIndex, categories.length - 1);
+        if (categories.length === 0) {
+          categories = ['Default'];
+          currentCategoryIndex = 0;
+        }
+        try {
+          let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
+          delete categorySpecificData[categoryToRemove];
+          localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
+        } catch (e) {
+          console.error('Error removing category-specific data:', e);
+        }
+        saveCategories();
+        document.getElementById('category-header').textContent = categories[currentCategoryIndex];
+        loadCategorySpecificData();
+      }
+      pendingDeleteIndex = null;
+    }
+
+    function parseTimeInput(input) {
+      if (!input) return 0;
+      input = input.trim().toLowerCase();
+      if (input.includes(':')) {
+        const parts = input.split(':').map(n => parseInt(n));
+        let minutes = 0, seconds = 0;
+        if (parts.length === 2) {
+          [minutes, seconds] = parts;
+        }
+        return (isNaN(minutes) ? 0 : minutes * 60) + (isNaN(seconds) ? 0 : seconds);
+      } else {
+        const num = parseInt(input);
+        return isNaN(num) ? 0 : num;
+      }
+    }
+
+    function showTab(tabName) {
+      console.log(`Switching to tab: ${tabName}`);
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+        console.log(`Deactivating content: ${content.id}`);
+      });
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+        console.log(`Deactivating tab: ${tab.textContent}`);
+      });
+      const targetContent = document.getElementById(tabName);
+      const targetTab = document.querySelector(`.tab[onclick="showTab('${tabName}')"]`);
+      if (targetContent && targetTab) {
+        targetContent.classList.add('active');
+        targetTab.classList.add('active');
+        console.log(`Activated tab: ${tabName}`);
+      } else {
+        console.error(`Tab or content not found for: ${tabName}`);
+      }
+      if (tabName === 'pb') {
+        updatePBDetails();
+        resetTimer();
+      }
+    }
+
+    function updatePBDetails() {
+      document.getElementById('pb-stage').textContent = document.getElementById('stage').value || 'N/A';
+      document.getElementById('pb-date').textContent = document.getElementById('date').value || 'N/A';
+      document.getElementById('pb-due').textContent = document.getElementById('due').value || 'N/A';
+      document.getElementById('pb-time').textContent = document.getElementById('task-time').value || 'N/A';
+    }
+
+    function toggleStartPause() {
+      if (!timer.isRunning) {
+        // Start the timer
+        timer.totalSeconds = parseTimeInput(document.getElementById('task-time').value);
+        if (timer.totalSeconds <= 0) {
+          alert('Please enter a valid time in the Tasks tab (e.g., "1:30:00" or "30 min").');
+          return;
+        }
+        timer.seconds = timer.totalSeconds;
+        timer.isRunning = true;
+        timer.isPaused = false;
+        timer.interval = setInterval(() => {
+          if (!timer.isPaused) {
+            timer.seconds--;
+            updateTimerDisplay();
+            updateCircleProgress();
+          }
+        }, 1000);
+        document.getElementById('start-pause-btn').textContent = 'Pause';
+      } else {
+        // Pause or resume the timer
+        timer.isPaused = !timer.isPaused;
+        document.getElementById('start-pause-btn').textContent = timer.isPaused ? 'Resume' : 'Pause';
+      }
+    }
+
+    function completeTimer() {
+      clearInterval(timer.interval);
+      timer.isRunning = false;
+      timer.isPaused = false;
+      // Check if completed early
+      if (timer.seconds > 0) {
+        const rewards = getRewards();
+        if (rewards.length > 0) {
+          const randomIndex = Math.floor(Math.random() * rewards.length);
+          const reward = rewards[randomIndex];
+          showRewardPopup(reward);
+        }
+      }
+      timer.seconds = timer.totalSeconds;
+      timer.interval = null;
+      updateTimerDisplay();
+      updateCircleProgress();
+      document.getElementById('start-pause-btn').textContent = 'Start';
+      // Append Pomo data to Summary tab
+      const stage = document.getElementById('pb-stage').textContent;
+      const date = document.getElementById('pb-date').textContent;
+      const due = document.getElementById('pb-due').textContent;
+      const time = document.getElementById('pb-time').textContent;
+      const summaryEntry = `Completed Task - Stage: ${stage}, Date: ${date}, Due: ${due}, Time: ${time}\n`;
+      const summaryTextarea = document.querySelector('#summary .summary-input');
+      summaryTextarea.value = (summaryTextarea.value ? summaryTextarea.value + '\n' : '') + summaryEntry;
+      saveCategorySpecificData();
+    }
+
+    function resetTimer() {
+      clearInterval(timer.interval);
+      timer.isRunning = false;
+      timer.isPaused = false;
+      timer.totalSeconds = parseTimeInput(document.getElementById('task-time').value);
+      timer.seconds = timer.totalSeconds;
+      timer.interval = null;
+      updateTimerDisplay();
+      updateCircleProgress();
+      document.getElementById('start-pause-btn').textContent = 'Start';
+    }
+
+    function updateTimerDisplay() {
+      const absSeconds = Math.abs(timer.seconds);
+      const hours = Math.floor(absSeconds / 3600);
+      const minutes = Math.floor((absSeconds % 3600) / 60);
+      const seconds = absSeconds % 60;
+      const timeStr = `${timer.seconds < 0 ? '-' : ''}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      document.getElementById('pb-timer').textContent = timeStr;
+    }
+
+    function updateCircleProgress() {
+      const circle = document.getElementById('timer-circle-progress');
+      const circumference = 596.9;
+      let progress = timer.totalSeconds ? timer.seconds / timer.totalSeconds : 1;
+      if (progress < 0) {
+        progress = 0;
+        circle.classList.add('overdue');
+      } else {
+        circle.classList.remove('overdue');
+      }
+      const offset = -circumference * (1 - progress);
+      circle.setAttribute('stroke-dashoffset', offset);
+    }
+
+    function formatDate() {
+      const date = new Date();
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const day = date.getDate();
+      const suffix = (day % 10 === 1 && day !== 11) ? 'st' :
+                     (day % 10 === 2 && day !== 12) ? 'nd' :
+                     (day % 10 === 3 && day !== 13) ? 'rd' : 'th';
+      return `${monthNames[date.getMonth()]} ${day}${suffix}`;
+    }
+
+    // Prompt Display Functions
+    function getPrompts() {
+      const promptItems = document.querySelectorAll('#prompts-list .prompt-item');
+      const prompts = [];
+      promptItems.forEach(item => {
+        const text = item.querySelector('span').textContent;
+        const isImportant = item.classList.contains('important');
+        prompts.push({ text, isImportant });
+      });
+      return prompts;
+    }
+
+    function displayRandomPrompt() {
+      const prompts = getPrompts();
+      if (prompts.length === 0) {
+        document.getElementById('promptDisplay').textContent = '';
+        return;
+      }
+      const randomIndex = Math.floor(Math.random() * prompts.length);
+      const prompt = prompts[randomIndex];
+      const display = document.getElementById('promptDisplay');
+      display.textContent = prompt.text;
+      if (prompt.isImportant) {
+        display.classList.add('important');
+      } else {
+        display.classList.remove('important');
+      }
+      // Only send notification if the app is not visible
+      if (document.hidden) {
+        sendPromptNotification(prompt.text);
+      }
+      const intervalInput = document.getElementById('refresh-interval').value;
+      let intervalSeconds = parseTimeInput(intervalInput);
+      if (intervalSeconds <= 0) intervalSeconds = 30; // Default to 30 seconds
+      const intervalMs = intervalSeconds * 1000;
+      const displayDuration = prompt.isImportant ? intervalMs * 1.5 : intervalMs;
+      setTimeout(displayRandomPrompt, displayDuration);
+    }
+
+    function populatePrompts(prompts) {
+      const list = document.getElementById('prompts-list');
+      list.innerHTML = '';
+      prompts.forEach((prompt, index) => {
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'prompt-item';
+        if (prompt.isImportant) {
+          promptDiv.classList.add('important');
+        }
+        promptDiv.innerHTML = `
+          <span ondblclick="editPrompt(this)">${prompt.text}</span>
+          <input type="checkbox" id="important-${index}" ${prompt.isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+          <label for="important-${index}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        list.appendChild(promptDiv);
+      });
+    }
+
+    function showAddPromptInput() {
+      const list = document.getElementById('prompts-list');
+      const inputDiv = document.createElement('div');
+      inputDiv.className = 'prompt-item';
+      inputDiv.innerHTML = `
+        <input type="text" placeholder="Enter new prompt..." onblur="addPrompt(this)" onkeypress="if(event.key === 'Enter') addPrompt(this)">
+      `;
+      list.insertBefore(inputDiv, list.firstChild);
+      inputDiv.querySelector('input').focus();
+    }
+
+    function addPrompt(input) {
+      const text = input.value.trim();
+      if (text) {
+        promptCounter++;
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'prompt-item';
+        promptDiv.innerHTML = `
+          <span ondblclick="editPrompt(this)">${text}</span>
+          <input type="checkbox" id="important-${promptCounter}" onchange="toggleImportant(this)">
+          <label for="important-${promptCounter}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        input.parentElement.replaceWith(promptDiv);
+        saveGlobalData();
+      } else {
+        input.parentElement.remove();
+      }
+    }
+
+    function editPrompt(span) {
+      const promptItem = span.parentElement;
+      const currentText = span.textContent;
+      const isImportant = promptItem.classList.contains('important');
+      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+      promptItem.innerHTML = `
+        <input type="text" value="${currentText}" onblur="savePromptEdit(this)" onkeypress="if(event.key === 'Enter') savePromptEdit(this)">
+        <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+        <label for="${checkboxId}">Important</label>
+        <button onclick="deletePrompt(this)">Delete</button>
+      `;
+      promptItem.querySelector('input[type="text"]').focus();
+    }
+
+    function savePromptEdit(input) {
+      const promptItem = input.parentElement;
+      const newText = input.value.trim();
+      const isImportant = promptItem.classList.contains('important');
+      const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+      if (newText) {
+        promptItem.innerHTML = `
+          <span ondblclick="editPrompt(this)">${newText}</span>
+          <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+          <label for="${checkboxId}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        if (isImportant) {
+          promptItem.classList.add('important');
+        }
+        saveGlobalData();
+      } else {
+        promptItem.remove();
+        saveGlobalData();
+      }
+    }
+
+    function toggleImportant(checkbox) {
+      const promptItem = checkbox.parentElement;
+      if (checkbox.checked) {
+        promptItem.classList.add('important');
+      } else {
+        promptItem.classList.remove('important');
+      }
+      saveGlobalData();
+    }
+
+    function deletePrompt(button) {
+      button.parentElement.remove();
+      saveGlobalData();
+    }
+
+    // Rewards Tab Functions
+    function getRewards() {
+      const rewardItems = document.querySelectorAll('#rewards-list .reward-item');
+      const rewards = [];
+      rewardItems.forEach(item => {
+        const text = item.querySelector('span').textContent;
+        rewards.push(text);
+      });
+      return rewards;
+    }
+
+    function populateRewards(rewards) {
+      const list = document.getElementById('rewards-list');
+      list.innerHTML = '';
+      rewards.forEach((reward, index) => {
+        const rewardDiv = document.createElement('div');
+        rewardDiv.className = 'reward-item';
+        rewardDiv.innerHTML = `
+          <span ondblclick="editReward(this)">${reward}</span>
+          <button onclick="deleteReward(this)">Delete</button>
+        `;
+        list.appendChild(rewardDiv);
+      });
+    }
+
+    function showAddRewardInput() {
+      const list = document.getElementById('rewards-list');
+      const inputDiv = document.createElement('div');
+      inputDiv.className = 'reward-item';
+      inputDiv.innerHTML = `
+        <input type="text" placeholder="Enter new reward..." onblur="addReward(this)" onkeypress="if(event.key === 'Enter') addReward(this)">
+      `;
+      list.insertBefore(inputDiv, list.firstChild);
+      inputDiv.querySelector('input').focus();
+    }
+
+    function addReward(input) {
+      const text = input.value.trim();
+      if (text) {
+        rewardCounter++;
+        const rewardDiv = document.createElement('div');
+        rewardDiv.className = 'reward-item';
+        rewardDiv.innerHTML = `
+          <span ondblclick="editReward(this)">${text}</span>
+          <button onclick="deleteReward(this)">Delete</button>
+        `;
+        input.parentElement.replaceWith(rewardDiv);
+        saveGlobalData();
+      } else {
+        input.parentElement.remove();
+      }
+    }
+
+    function editReward(span) {
+      const rewardItem = span.parentElement;
+      const currentText = span.textContent;
+      rewardItem.innerHTML = `
+        <input type="text" value="${currentText}" onblur="saveRewardEdit(this)" onkeypress="if(event.key === 'Enter') saveRewardEdit(this)">
+        <button onclick="deleteReward(this)">Delete</button>
+      `;
+      rewardItem.querySelector('input[type="text"]').focus();
+    }
+
+    function saveRewardEdit(input) {
+      const rewardItem = input.parentElement;
+      const newText = input.value.trim();
+      if (newText) {
+        rewardItem.innerHTML = `
+          <span ondblclick="editReward(this)">${newText}</span>
+          <button onclick="deleteReward(this)">Delete</button>
+        `;
+        saveGlobalData();
+      } else {
+        rewardItem.remove();
+        saveGlobalData();
+      }
+    }
+
+    function deleteReward(button) {
+      button.parentElement.remove();
+      saveGlobalData();
+    }
+
+    // Add event listeners for saving category-specific data on input changes
+    function addSaveEventListeners() {
+      // Tasks tab inputs
+      document.getElementById('stage').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('date').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('due').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('task-time').addEventListener('input', saveCategorySpecificData);
+      document.getElementById('task-notes').addEventListener('input', saveCategorySpecificData);
+      // Notes tab textarea
+      document.querySelector('#notes .notes-input').addEventListener('input', saveCategorySpecificData);
+      // Summary tab textarea
+      document.querySelector('#summary .summary-input').addEventListener('input', saveCategorySpecificData);
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCategories();
+      loadGlobalData();
+      loadCategorySpecificData();
+      addSaveEventListeners();
+      resetTimer();
+      // Request notification permission
+      requestNotificationPermission();
+      // Start displaying random prompts
+      displayRandomPrompt();
+      // Ensure initial tab state
+      showTab('pb');
+    });
+  </script>
+</body>
+</html>
