@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Jiffy</title>
-  <link rel="manifest" href="/manifest.json?v=20">
+  <link rel="manifest" href="/manifest.json?v=21">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Jiffy">
@@ -92,6 +92,9 @@
       align-items: center;
       justify-content: center;
       position: relative;
+      width: 100%;
+      overflow: hidden;
+      touch-action: pan-y;
     }
     .tab {
       padding: 6px 15px;
@@ -100,10 +103,11 @@
       font-size: 0.85rem;
       text-align: center;
       opacity: 0;
-      transition: opacity 0.3s ease, color 0.3s ease;
+      transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, color 0.3s ease-in-out;
       touch-action: pan-y;
       position: absolute;
       display: none;
+      transform: translateX(0);
     }
     .tab.active {
       color: #fff;
@@ -112,10 +116,17 @@
       display: inline-block;
       position: static;
     }
-    .tab.transitioning {
+    .tab.transitioning-left {
       display: inline-block;
       opacity: 0.5;
       color: #999;
+      transform: translateX(-100%);
+    }
+    .tab.transitioning-right {
+      display: inline-block;
+      opacity: 0.5;
+      color: #999;
+      transform: translateX(100%);
     }
     .tab-content {
       display: none;
@@ -650,7 +661,9 @@
 
     // Tab swipe functionality
     let tabTouchStartX = 0;
-    let tabTouchEndX = 0;
+    let tabTouchCurrentX = 0;
+    let tabTouchDeltaX = 0;
+    let isSwiping = false;
 
     function setupTabSwipe() {
       try {
@@ -658,10 +671,20 @@
         if (tabContainer) {
           tabContainer.addEventListener('touchstart', (e) => {
             tabTouchStartX = e.changedTouches[0].screenX;
+            tabTouchCurrentX = tabTouchStartX;
+            isSwiping = true;
+          });
+          tabContainer.addEventListener('touchmove', (e) => {
+            if (isSwiping) {
+              tabTouchCurrentX = e.changedTouches[0].screenX;
+              tabTouchDeltaX = tabTouchCurrentX - tabTouchStartX;
+              updateTabPosition();
+            }
           });
           tabContainer.addEventListener('touchend', (e) => {
-            tabTouchEndX = e.changedTouches[0].screenX;
+            isSwiping = false;
             handleTabSwipe();
+            resetTabPositions();
           });
         } else {
           console.error("tab-container not found");
@@ -671,27 +694,55 @@
       }
     }
 
+    function updateTabPosition() {
+      try {
+        const currentTab = document.querySelector(`.tab[data-tab="${tabs[currentTabIndex].id}"]`);
+        const nextTabIndex = tabTouchDeltaX < 0 ? (currentTabIndex + 1) % tabs.length : (currentTabIndex - 1 + tabs.length) % tabs.length;
+        const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextTabIndex].id}"]`);
+        if (currentTab && nextTab) {
+          const translateX = tabTouchDeltaX;
+          currentTab.style.transform = `translateX(${translateX}px)`;
+          currentTab.style.opacity = 1 - Math.min(Math.abs(tabTouchDeltaX) / 100, 0.5);
+          nextTab.style.display = 'inline-block';
+          nextTab.style.transform = `translateX(${translateX + (tabTouchDeltaX < 0 ? 100 : -100)}px)`;
+          nextTab.style.opacity = Math.min(Math.abs(tabTouchDeltaX) / 100, 0.5);
+          nextTab.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
+        }
+      } catch (e) {
+        console.error("Error in updateTabPosition:", e);
+      }
+    }
+
+    function resetTabPositions() {
+      try {
+        document.querySelectorAll('.tab').forEach(tab => {
+          tab.style.transform = 'translateX(0)';
+          tab.style.opacity = 0;
+          tab.classList.remove('transitioning-left', 'transitioning-right');
+          if (!tab.classList.contains('active')) {
+            tab.style.display = 'none';
+          }
+        });
+      } catch (e) {
+        console.error("Error in resetTabPositions:", e);
+      }
+    }
+
     function handleTabSwipe() {
       try {
         const swipeThreshold = 50;
         let nextTabIndex = currentTabIndex;
-        if (tabTouchEndX < tabTouchStartX - swipeThreshold) {
+        if (tabTouchDeltaX < -swipeThreshold) {
           // Swipe left
           nextTabIndex = (currentTabIndex + 1) % tabs.length;
-        } else if (tabTouchEndX > tabTouchStartX + swipeThreshold) {
+        } else if (tabTouchDeltaX > swipeThreshold) {
           // Swipe right
           nextTabIndex = (currentTabIndex - 1 + tabs.length) % tabs.length;
         }
         if (nextTabIndex !== currentTabIndex) {
-          // Show transitioning tab briefly
-          const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextTabIndex].id}"]`);
-          if (nextTab) {
-            nextTab.classList.add('transitioning');
-            setTimeout(() => {
-              nextTab.classList.remove('transitioning');
-              showTab(tabs[nextTabIndex].id);
-            }, 300); // Match CSS transition duration
-          }
+          showTab(tabs[nextTabIndex].id);
+        } else {
+          resetTabPositions();
         }
       } catch (e) {
         console.error("Error in handleTabSwipe:", e);
@@ -1164,13 +1215,18 @@
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active');
-          tab.classList.remove('transitioning');
+          tab.classList.remove('transitioning-left', 'transitioning-right');
+          tab.style.display = 'none';
+          tab.style.transform = 'translateX(0)';
+          tab.style.opacity = 0;
         });
         const targetContent = document.getElementById(tabId);
         const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
         if (targetContent && targetTab) {
           targetContent.classList.add('active');
           targetTab.classList.add('active');
+          targetTab.style.display = 'inline-block';
+          targetTab.style.opacity = 1;
           currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
         } else {
           console.error(`Tab or content not found for: ${tabId}`);
