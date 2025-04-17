@@ -27,7 +27,7 @@
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
       box-sizing: border-box;
-      touch-action: none;
+      touch-action: manipulation;
     }
     .header {
       display: flex;
@@ -105,14 +105,13 @@
       overflow: hidden;
       width: 100%;
       box-sizing: border-box;
-      touch-action: none;
+      touch-action: pan-y pinch-zoom; /* Allow vertical scrolling */
     }
     .tabs-content-container {
       display: flex;
       flex-direction: column;
       width: 100%;
       height: 100%;
-      transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
       will-change: transform;
     }
     .tabs {
@@ -140,13 +139,13 @@
       color: #999;
       font-size: 0.85rem;
       text-align: center;
-      transition: color 0.3s ease-in-out;
+      transition: color 0.2s ease-in-out, opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
       touch-action: none;
       position: absolute;
       z-index: 1;
       opacity: 0;
       transform: translateX(100%);
-      transition: opacity 0.3s, transform 0.3s;
+      display: none; /* Hide by default */
     }
     .tab.active {
       color: #fff;
@@ -155,6 +154,7 @@
       z-index: 2;
       opacity: 1;
       transform: translateX(0);
+      display: inline-block; /* Show active tab */
     }
     .tab-content-container {
       position: relative;
@@ -168,7 +168,7 @@
       padding: 10px;
       flex: 1;
       overflow-y: auto;
-      background-color: #1a1a1a;
+      background: #1a1a1a;
       position: absolute;
       width: 100%;
       height: 100%;
@@ -179,7 +179,7 @@
       display: none;
       opacity: 0;
       transform: translateX(100%);
-      transition: opacity 0.3s, transform 0.3s;
+      transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
     }
     .tab-content.active {
       display: flex;
@@ -759,16 +759,11 @@
     // Tab swipe functionality
     let touchState = {
       startX: 0,
-      currentX: 0,
       deltaX: 0,
-      isSwiping: false,
-      lastTime: 0,
-      lastX: 0,
-      velocity: 0
+      isSwiping: false
     };
-    const SWIPE_THRESHOLD = 0.3; // 30% of viewport width
-    const VELOCITY_THRESHOLD = 0.5; // pixels per millisecond
-    const ANIMATION_DURATION = 300; // ms
+    const SWIPE_THRESHOLD = 100; // Pixels
+    const ANIMATION_DURATION = 200; // ms
 
     function setupTabSwipe() {
       try {
@@ -786,128 +781,222 @@
     }
 
     function handleTouchStart(e) {
-      e.preventDefault();
-      touchState.startX = e.changedTouches[0].clientX;
-      touchState.currentX = touchState.startX;
-      touchState.lastX = touchState.startX;
-      touchState.lastTime = Date.now();
-      touchState.isSwiping = true;
-      prepareAdjacentTabs();
+      try {
+        touchState.startX = e.touches[0].clientX;
+        touchState.deltaX = 0;
+        touchState.isSwiping = true;
+        prepareAdjacentTabs();
+      } catch (e) {
+        console.error("Error in handleTouchStart:", e);
+      }
     }
 
     function handleTouchMove(e) {
-      if (!touchState.isSwiping) return;
-      e.preventDefault();
-      
-      const currentTime = Date.now();
-      touchState.currentX = e.changedTouches[0].clientX;
-      touchState.deltaX = touchState.currentX - touchState.startX;
-      
-      // Calculate velocity
-      const timeDelta = currentTime - touchState.lastTime;
-      if (timeDelta > 0) {
-        touchState.velocity = (touchState.currentX - touchState.lastX) / timeDelta;
+      try {
+        if (!touchState.isSwiping) return;
+        e.preventDefault();
+        touchState.deltaX = e.touches[0].clientX - touchState.startX;
+        updateTabPosition();
+      } catch (e) {
+        console.error("Error in handleTouchMove:", e);
       }
-      
-      touchState.lastX = touchState.currentX;
-      touchState.lastTime = currentTime;
-      
-      updateTabPosition();
     }
 
     function handleTouchEnd(e) {
-      if (!touchState.isSwiping) return;
-      touchState.isSwiping = false;
-      
-      const viewportWidth = window.innerWidth;
-      const minSwipeDistance = viewportWidth * SWIPE_THRESHOLD;
-      const absDeltaX = Math.abs(touchState.deltaX);
-      const absVelocity = Math.abs(touchState.velocity);
-      
-      let nextTabIndex = currentTabIndex;
-      if (absDeltaX > minSwipeDistance || absVelocity > VELOCITY_THRESHOLD) {
-        if (touchState.deltaX < 0 && currentTabIndex < tabs.length - 1) {
-          nextTabIndex = currentTabIndex + 1;
-        } else if (touchState.deltaX > 0 && currentTabIndex > 0) {
-          nextTabIndex = currentTabIndex - 1;
+      try {
+        if (!touchState.isSwiping) return;
+        touchState.isSwiping = false;
+
+        let nextTabIndex = currentTabIndex;
+        if (Math.abs(touchState.deltaX) > SWIPE_THRESHOLD) {
+          if (touchState.deltaX < 0 && currentTabIndex < tabs.length - 1) {
+            nextTabIndex = currentTabIndex + 1; // Swipe left
+          } else if (touchState.deltaX > 0 && currentTabIndex > 0) {
+            nextTabIndex = currentTabIndex - 1; // Swipe right
+          }
         }
+
+        showTab(tabs[nextTabIndex].id);
+        resetTabPositions();
+      } catch (e) {
+        console.error("Error in handleTouchEnd:", e);
       }
-      
-      showTab(tabs[nextTabIndex].id);
-      touchState.deltaX = 0;
     }
 
     function prepareAdjacentTabs() {
-      const prevIndex = currentTabIndex > 0 ? currentTabIndex - 1 : null;
-      const nextIndex = currentTabIndex < tabs.length - 1 ? currentTabIndex + 1 : null;
-      
-      if (prevIndex !== null) {
-        const prevTab = document.querySelector(`.tab[data-tab="${tabs[prevIndex].id}"]`);
-        const prevContent = document.getElementById(tabs[prevIndex].id);
-        if (prevTab && prevContent) {
-          prevTab.style.transform = 'translateX(-100%)';
-          prevTab.style.opacity = '1';
-          prevContent.style.display = 'flex';
-          prevContent.style.transform = 'translateX(-100%)';
-          prevContent.style.opacity = '1';
+      try {
+        // Reset all tabs and contents except the active one
+        document.querySelectorAll('.tab').forEach(tab => {
+          if (!tab.classList.contains('active')) {
+            tab.style.display = 'none';
+            tab.style.opacity = '0';
+            tab.style.transform = 'translateX(100%)';
+          }
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+          if (!content.classList.contains('active')) {
+            content.style.display = 'none';
+            content.style.opacity = '0';
+            content.style.transform = 'translateX(100%)';
+          }
+        });
+
+        const prevIndex = currentTabIndex > 0 ? currentTabIndex - 1 : null;
+        const nextIndex = currentTabIndex < tabs.length - 1 ? currentTabIndex + 1 : null;
+
+        if (prevIndex !== null) {
+          const prevTab = document.querySelector(`.tab[data-tab="${tabs[prevIndex].id}"]`);
+          const prevContent = document.getElementById(tabs[prevIndex].id);
+          if (prevTab && prevContent) {
+            prevTab.style.display = 'inline-block';
+            prevTab.style.transform = 'translateX(-100%)';
+            prevTab.style.opacity = '0';
+            prevContent.style.display = 'flex';
+            prevContent.style.transform = 'translateX(-100%)';
+            prevContent.style.opacity = '0';
+          }
         }
-      }
-      
-      if (nextIndex !== null) {
-        const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextIndex].id}"]`);
-        const nextContent = document.getElementById(tabs[nextIndex].id);
-        if (nextTab && nextContent) {
-          nextTab.style.transform = 'translateX(100%)';
-          nextTab.style.opacity = '1';
-          nextContent.style.display = 'flex';
-          nextContent.style.transform = 'translateX(100%)';
-          nextContent.style.opacity = '1';
+
+        if (nextIndex !== null) {
+          const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextIndex].id}"]`);
+          const nextContent = document.getElementById(tabs[nextIndex].id);
+          if (nextTab && nextContent) {
+            nextTab.style.display = 'inline-block';
+            nextTab.style.transform = 'translateX(100%)';
+            nextTab.style.opacity = '0';
+            nextContent.style.display = 'flex';
+            nextContent.style.transform = 'translateX(100%)';
+            nextContent.style.opacity = '0';
+          }
         }
+      } catch (e) {
+        console.error("Error in prepareAdjacentTabs:", e);
       }
     }
 
     function updateTabPosition() {
       try {
-        const container = document.getElementById('tabsContentContainer');
-        if (!container) return;
-        
         const viewportWidth = window.innerWidth;
         const translatePercentage = (touchState.deltaX / viewportWidth) * 100;
-        // Clamp the translation to prevent overshooting
         const clampedPercentage = Math.max(-100, Math.min(100, translatePercentage));
-        
-        container.style.transition = 'none';
-        container.style.transform = `translate3d(${clampedPercentage}%, 0, 0)`;
-        
-        // Update adjacent tabs and contents
+
+        const currentTab = document.querySelector(`.tab[data-tab="${tabs[currentTabIndex].id}"]`);
+        const currentContent = document.getElementById(tabs[currentTabIndex].id);
+        if (currentTab && currentContent) {
+          currentTab.style.transition = 'none';
+          currentContent.style.transition = 'none';
+          currentTab.style.transform = `translateX(${clampedPercentage}%)`;
+          currentContent.style.transform = `translateX(${clampedPercentage}%)`;
+          currentTab.style.opacity = 1 - Math.abs(clampedPercentage) / 100;
+          currentContent.style.opacity = 1 - Math.abs(clampedPercentage) / 100;
+        }
+
         const prevIndex = currentTabIndex > 0 ? currentTabIndex - 1 : null;
         const nextIndex = currentTabIndex < tabs.length - 1 ? currentTabIndex + 1 : null;
-        
-        if (prevIndex !== null) {
+
+        if (prevIndex !== null && touchState.deltaX > 0) {
           const prevTab = document.querySelector(`.tab[data-tab="${tabs[prevIndex].id}"]`);
           const prevContent = document.getElementById(tabs[prevIndex].id);
           if (prevTab && prevContent) {
             const prevTranslate = -100 + clampedPercentage;
+            prevTab.style.transition = 'none';
+            prevContent.style.transition = 'none';
             prevTab.style.transform = `translateX(${prevTranslate}%)`;
             prevContent.style.transform = `translateX(${prevTranslate}%)`;
-            prevTab.style.opacity = Math.min(1, clampedPercentage / 100);
-            prevContent.style.opacity = Math.min(1, clampedPercentage / 100);
+            prevTab.style.opacity = clampedPercentage / 100;
+            prevContent.style.opacity = clampedPercentage / 100;
           }
         }
-        
-        if (nextIndex !== null) {
+
+        if (nextIndex !== null && touchState.deltaX < 0) {
           const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextIndex].id}"]`);
           const nextContent = document.getElementById(tabs[nextIndex].id);
           if (nextTab && nextContent) {
             const nextTranslate = 100 + clampedPercentage;
+            nextTab.style.transition = 'none';
+            nextContent.style.transition = 'none';
             nextTab.style.transform = `translateX(${nextTranslate}%)`;
             nextContent.style.transform = `translateX(${nextTranslate}%)`;
-            nextTab.style.opacity = Math.min(1, -clampedPercentage / 100);
-            nextContent.style.opacity = Math.min(1, -clampedPercentage / 100);
+            nextTab.style.opacity = -clampedPercentage / 100;
+            nextContent.style.opacity = -clampedPercentage / 100;
           }
         }
       } catch (e) {
         console.error("Error in updateTabPosition:", e);
+      }
+    }
+
+    function resetTabPositions() {
+      try {
+        document.querySelectorAll('.tab').forEach(tab => {
+          if (!tab.classList.contains('active')) {
+            tab.style.display = 'none';
+            tab.style.opacity = '0';
+            tab.style.transform = 'translateX(100%)';
+            tab.style.transition = '';
+          }
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+          if (!content.classList.contains('active')) {
+            content.style.display = 'none';
+            content.style.opacity = '0';
+            content.style.transform = 'translateX(100%)';
+            content.style.transition = '';
+          }
+        });
+        const currentTab = document.querySelector(`.tab[data-tab="${tabs[currentTabIndex].id}"]`);
+        const currentContent = document.getElementById(tabs[currentTabIndex].id);
+        if (currentTab && currentContent) {
+          currentTab.style.transition = '';
+          currentContent.style.transition = '';
+          currentTab.style.transform = 'translateX(0)';
+          currentContent.style.transform = 'translateX(0)';
+          currentTab.style.opacity = '1';
+          currentContent.style.opacity = '1';
+        }
+      } catch (e) {
+        console.error("Error in resetTabPositions:", e);
+      }
+    }
+
+    function showTab(tabId) {
+      try {
+        currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
+
+        // Reset all tabs and contents
+        document.querySelectorAll('.tab').forEach(tab => {
+          tab.classList.remove('active');
+          tab.style.display = 'none';
+          tab.style.opacity = '0';
+          tab.style.transform = 'translateX(100%)';
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+          content.style.display = 'none';
+          content.style.opacity = '0';
+          content.style.transform = 'translateX(100%)';
+        });
+
+        // Activate new tab and content
+        const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
+        const targetContent = document.getElementById(tabId);
+        if (targetTab && targetContent) {
+          targetTab.classList.add('active');
+          targetTab.style.display = 'inline-block';
+          targetTab.style.opacity = '1';
+          targetTab.style.transform = 'translateX(0)';
+          targetContent.classList.add('active');
+          targetContent.style.display = 'flex';
+          targetContent.style.opacity = '1';
+          targetContent.style.transform = 'translateX(0)';
+        }
+
+        if (tabId === 'pb') {
+          updatePBDetails();
+          resetTimer();
+        }
+      } catch (e) {
+        console.error("Error in showTab:", e);
       }
     }
 
@@ -1154,7 +1243,7 @@
       try {
         const currentCategory = categories[currentCategoryIndex];
         const categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
-        const categoryData = categorySpecificData[currentCategory] || {};
+        const categoryData = category0 || {};
         const tasksData = categoryData.tasks || {
           stage: "Scales",
           date: formatDate(),
@@ -1267,7 +1356,7 @@
         if (container) {
           container.innerHTML = `
             <button onclick="removeCategory()">-</button>
-            <span id="category-header"fet class="category-name">${categories[currentCategoryIndex]}</span>
+            <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
             <button onclick="addCategory()">+</button>
           `;
           const newCategoryHeader = document.getElementById('category-header');
@@ -1362,59 +1451,6 @@
       } catch (e) {
         console.error("Error in parseTimeInput:", e);
         return 0;
-      }
-    }
-
-    function showTab(tabId) {
-      try {
-        const previousTabIndex = currentTabIndex;
-        currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
-        const direction = currentTabIndex > previousTabIndex ? 'right' : 'left';
-        
-        // Reset all tabs and contents
-        document.querySelectorAll('.tab').forEach(tab => {
-          tab.classList.remove('active');
-          tab.style.opacity = '0';
-          tab.style.transform = 'translateX(100%)';
-          if (tab.dataset.tab !== tabId) {
-            tab.style.display = 'none';
-          }
-        });
-        document.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.remove('active');
-          content.style.opacity = '0';
-          content.style.transform = 'translateX(100%)';
-          content.style.display = 'none';
-        });
-        
-        // Activate new tab and content
-        const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
-        const targetContent = document.getElementById(tabId);
-        if (targetTab && targetContent) {
-          targetTab.classList.add('active');
-          targetTab.style.display = 'inline-block';
-          targetTab.style.opacity = '1';
-          targetTab.style.transform = 'translateX(0)';
-          
-          targetContent.classList.add('active');
-          targetContent.style.display = 'flex';
-          targetContent.style.opacity = '1';
-          targetContent.style.transform = 'translateX(0)';
-        }
-        
-        // Animate container
-        const container = document.getElementById('tabsContentContainer');
-        if (container) {
-          container.style.transition = `transform ${ANIMATION_DURATION}ms cubic-bezier(0.4, 0.0, 0.2, 1)`;
-          container.style.transform = 'translate3d(0, 0, 0)';
-        }
-        
-        if (tabId === 'pb') {
-          updatePBDetails();
-          resetTimer();
-        }
-      } catch (e) {
-        console.error("Error in showTab:", e);
       }
     }
 
