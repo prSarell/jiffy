@@ -103,7 +103,7 @@
       font-size: 0.85rem;
       text-align: center;
       opacity: 0;
-      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, color 0.3s ease-in-out;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease-in-out;
       touch-action: pan-y;
       position: absolute;
       display: none;
@@ -146,20 +146,24 @@
       top: 0;
       left: 0;
       transform: translateX(0);
-      transition: transform 0.5s ease-in-out;
+      opacity: 0;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
       position: static;
+      opacity: 1;
     }
     .tab-content.transitioning-left {
       display: flex;
       transform: translateX(-100%);
+      opacity: 0;
     }
     .tab-content.transitioning-right {
       display: flex;
       transform: translateX(100%);
+      opacity: 0;
     }
     .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
@@ -746,15 +750,18 @@
         if (currentTab && nextTab && currentContent && nextContent) {
           const translateX = tabTouchDeltaX;
           const translatePercentage = (tabTouchDeltaX / window.innerWidth) * 100;
+          const opacity = 1 - Math.min(Math.abs(translatePercentage) / 100, 0.5);
           currentTab.style.transform = `translateX(${translateX}px)`;
-          currentTab.style.opacity = 1 - Math.min(Math.abs(tabTouchDeltaX) / 100, 0.5);
+          currentTab.style.opacity = opacity;
           nextTab.style.display = 'inline-block';
           nextTab.style.transform = `translateX(${translateX + (tabTouchDeltaX < 0 ? 100 : -100)}px)`;
-          nextTab.style.opacity = Math.min(Math.abs(tabTouchDeltaX) / 100, 0.5);
+          nextTab.style.opacity = 1 - opacity;
           nextTab.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
           currentContent.style.transform = `translateX(${translatePercentage}%)`;
+          currentContent.style.opacity = opacity;
           nextContent.style.display = 'flex';
           nextContent.style.transform = `translateX(${translatePercentage + (tabTouchDeltaX < 0 ? 100 : -100)}%)`;
+          nextContent.style.opacity = 1 - opacity;
           nextContent.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
         }
       } catch (e) {
@@ -774,6 +781,7 @@
         });
         document.querySelectorAll('.tab-content').forEach(content => {
           content.style.transform = 'translateX(0)';
+          content.style.opacity = 0;
           content.classList.remove('transitioning-left', 'transitioning-right');
           if (!content.classList.contains('active')) {
             content.style.display = 'none';
@@ -786,7 +794,7 @@
 
     function handleTabSwipe() {
       try {
-        const swipeThreshold = 80; // Adjusted for better sensitivity
+        const swipeThreshold = 80;
         let nextTabIndex = currentTabIndex;
         if (tabTouchDeltaX < -swipeThreshold) {
           nextTabIndex = (currentTabIndex + 1) % tabs.length;
@@ -1266,6 +1274,7 @@
           content.classList.remove('active', 'transitioning-left', 'transitioning-right');
           content.style.display = 'none';
           content.style.transform = 'translateX(0)';
+          content.style.opacity = 0;
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
@@ -1280,7 +1289,6 @@
           targetContent.style.display = 'flex';
           targetTab.classList.add('active');
           targetTab.style.display = 'inline-block';
-          targetTab.style.opacity = 1;
           if (previousTabIndex !== currentTabIndex) {
             const previousContent = document.getElementById(tabs[previousTabIndex].id);
             const previousTab = document.querySelector(`.tab[data-tab="${tabs[previousTabIndex].id}"]`);
@@ -1290,14 +1298,19 @@
               previousTab.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
               previousContent.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
               targetContent.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
+              targetContent.style.opacity = 0;
               targetTab.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
               targetTab.style.opacity = 0;
               setTimeout(() => {
                 targetContent.style.transform = 'translateX(0)';
+                targetContent.style.opacity = 1;
                 targetTab.style.transform = 'translateX(0)';
                 targetTab.style.opacity = 1;
               }, 10);
             }
+          } else {
+            targetContent.style.opacity = 1;
+            targetTab.style.opacity = 1;
           }
         } else {
           console.error(`Tab or content not found for: ${tabId}`);
