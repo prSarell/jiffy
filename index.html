@@ -19,6 +19,7 @@
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
+      overflow-y: hidden;
       font-size: 14px;
       color: #fff;
       padding-left: env(safe-area-inset-left);
@@ -26,6 +27,7 @@
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
       box-sizing: border-box;
+      touch-action: pan-x;
     }
     .header {
       display: flex;
@@ -147,14 +149,14 @@
     .tab-content-container {
       position: relative;
       flex: 1;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: hidden;
       background-color: #1a1a1a;
       width: 100%;
       box-sizing: border-box;
       touch-action: pan-x;
     }
     .tab-content {
-      display: none;
       padding: 10px;
       flex: 1;
       overflow-y: auto;
@@ -164,14 +166,16 @@
       height: 100%;
       top: 0;
       left: 0;
-      transform: translateX(0);
+      transform: translateX(100%);
       transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0);
       box-sizing: border-box;
+      touch-action: pan-x;
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
-      position: static;
+      position: absolute;
+      transform: translateX(0);
     }
     .tab-content.transitioning-left {
       display: flex;
@@ -311,6 +315,7 @@
       box-sizing: border-box;
       background-color: #222;
       color: #fff;
+      touch-action: pan-x;
     }
     .prompts-header, .rewards-header {
       display: flex;
@@ -387,6 +392,7 @@
       background-color: #222;
       color: #fff;
       resize: none;
+      touch-action: pan-x;
     }
     .reward-popup {
       display: none;
@@ -848,9 +854,14 @@
         });
         document.querySelectorAll('.tab-content').forEach(content => {
           content.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
-          content.style.transform = 'translateX(0)';
-          content.classList.remove('transitioning-left', 'transitioning-right');
-          if (!content.classList.contains('active')) {
+          if (content.classList.contains('active')) {
+            content.style.transform = 'translateX(0)';
+          } else if (content.classList.contains('transitioning-left')) {
+            content.style.transform = 'translateX(-100%)';
+          } else if (content.classList.contains('transitioning-right')) {
+            content.style.transform = 'translateX(100%)';
+          } else {
+            content.style.transform = 'translateX(100%)';
             content.style.display = 'none';
           }
         });
@@ -1346,14 +1357,18 @@
         const previousTabIndex = currentTabIndex;
         currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
         const direction = currentTabIndex > previousTabIndex ? 'left' : 'right';
+        
+        // Remove active and transitioning classes from all tabs and content
         document.querySelectorAll('.tab-content').forEach(content => {
           content.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          content.style.transform = 'translateX(0)';
+          content.style.transform = direction === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          tab.style.transform = 'translateX(0)';
+          tab.style.transform = direction === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
+          tab.style.display = 'none';
         });
+
         const targetContent = document.getElementById(tabId);
         const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
         if (targetContent && targetTab) {
@@ -1361,6 +1376,7 @@
           targetContent.style.display = 'flex';
           targetTab.classList.add('active');
           targetTab.style.display = 'inline-block';
+
           if (previousTabIndex !== currentTabIndex) {
             const previousContent = document.getElementById(tabs[previousTabIndex].id);
             const previousTab = document.querySelector(`.tab[data-tab="${tabs[previousTabIndex].id}"]`);
@@ -1376,10 +1392,14 @@
                 targetTab.style.transform = 'translateX(0)';
               }, 10);
             }
+          } else {
+            targetContent.style.transform = 'translateX(0)';
+            targetTab.style.transform = 'translateX(0)';
           }
         } else {
           console.error(`Tab or content not found for: ${tabId}`);
         }
+
         if (tabId === 'pb') {
           updatePBDetails();
           resetTimer();
@@ -1571,364 +1591,286 @@
             promptDiv.innerHTML = `
               <span ondblclick="editPrompt(this)">${prompt.text}</span>
               <input type="checkbox" id="important-${index}" ${prompt.isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
-              <label for="important  andleCategorySwipe();
+              <label for="important-${index}">Important</label>
+              <button onclick="deletePrompt(this)">Delete</button>
+            `;
+            list.appendChild(promptDiv);
+          });
+        } else {
+          console.error("prompts-list element not found");
         }
       } catch (e) {
-        console.error("Error in handleCategorySwipe:", e);
+        console.error("Error in populatePrompts:", e);
       }
     }
 
-    function saveGlobalData() {
+    function showAddPromptInput() {
       try {
-        const prompts = getPrompts();
-        const rewards = getRewards();
-        const globalData = { prompts, rewards };
-        localStorage.setItem('globalData', JSON.stringify(globalData));
+        const list = document.getElementById('prompts-list');
+        if (list) {
+          const inputDiv = document.createElement('div');
+          inputDiv.className = 'prompt-item';
+          inputDiv.innerHTML = `
+            <input type="text" placeholder="Enter new prompt..." onblur="addPrompt(this)" onkeypress="if(event.key === 'Enter') addPrompt(this)">
+          `;
+          list.insertBefore(inputDiv, list.firstChild);
+          inputDiv.querySelector('input').focus();
+        } else {
+          console.error("prompts-list element not found");
+        }
       } catch (e) {
-        console.error('Error saving global data:', e);
+        console.error("Error in showAddPromptInput:", e);
       }
     }
 
-    function loadGlobalData() {
+    function addPrompt(input) {
       try {
-        const globalData = JSON.parse(localStorage.getItem('globalData')) || {};
-        const prompts = globalData.prompts || [
-          { text: "PAY PARKING FINE!!!", isImportant: true },
-          { text: "Get milk", isImportant: false },
-          { text: "Breathe", isImportant: false },
-          { text: "2pm Mtg!!!", isImportant: true }
-        ];
-        const rewards = globalData.rewards || [
-          "Great job, you smashed it!",
-          "You're killing it!",
-          "Fantastic work!",
-          "On fire",
-          "Yeah Bouy!",
-          "Fernsteuerung!",
-          "Way to go, superstar!",
-          "Crushing it!",
-          "Nailed it!",
-          "Bravo, that was amazing!",
-          "Impressive work, well done!",
-          "Smashing work Gromit!",
-          "Superb effort, keep shining!",
-          "You're unstoppable!",
-          "What a triumph!",
-          "Amazing job, keep up the great work!",
-          "Incredible, you're a rockstar!",
-          "Sensational performance!",
-          "Your productivity is inspiring!",
-          "Mike, you F*cken LEGEND!!!",
-          "They said you'd never make it, but you finally came through!",
-          "You’re a wizard Harry!"
-        ];
-        populatePrompts(prompts);
-        populateRewards(rewards);
-        promptCounter = prompts.length;
-        rewardCounter = rewards.length;
+        const text = input.value.trim();
+        if (text) {
+          promptCounter++;
+          const promptDiv = document.createElement('div');
+          promptDiv.className = 'prompt-item';
+          promptDiv.innerHTML = `
+            <span ondblclick="editPrompt(this)">${text}</span>
+            <input type="checkbox" id="important-${promptCounter}" onchange="toggleImportant(this)">
+            <label for="important-${promptCounter}">Important</label>
+            <button onclick="deletePrompt(this)">Delete</button>
+          `;
+          input.parentElement.replaceWith(promptDiv);
+          saveGlobalData();
+        } else {
+          input.parentElement.remove();
+        }
       } catch (e) {
-        console.error('Error loading global data:', e);
-        populatePrompts([
-          { text: "PAY PARKING FINE!!!", isImportant: true },
-          { text: "Get milk", isImportant: false },
-          { text: "Breathe", isImportant: false },
-          { text: "2pm Mtg!!!", isImportant: true }
-        ]);
-        populateRewards([
-          "Great job, you smashed it!",
-          "You're killing it!",
-          "Fantastic work!",
-          "On fire",
-          "Yeah Bouy!",
-          "Fernsteuerung!",
-          "Way to go, superstar!",
-          "Crushing it!",
-          "Nailed it!",
-          "Bravo, that was amazing!",
-          "Impressive work, well done!",
-          "Smashing work Gromit!",
-          "Superb effort, keep shining!",
-          "You're unstoppable!",
-          "What a triumph!",
-          "Amazing job, keep up the great work!",
-          "Incredible, you're a rockstar!",
-          "Sensational performance!",
-          "Your productivity is inspiring!",
-          "Mike, you F*cken LEGEND!!!",
-          "They said you'd never make it, but you finally came through!",
-          "You’re a wizard Harry!"
-        ]);
-        promptCounter = 4;
-        rewardCounter = 22;
+        console.error("Error in addPrompt:", e);
       }
     }
 
-    function saveCategorySpecificData() {
+    function editPrompt(span) {
       try {
-        const currentCategory = categories[currentCategoryIndex];
-        const tasksData = {
-          stage: document.getElementById('stage')?.value || '',
-          date: document.getElementById('date')?.value || '',
-          due: document.getElementById('due')?.value || '',
-          time: document.getElementById('task-time')?.value || '',
-          notes: document.getElementById('task-notes')?.value || ''
-        };
-        const notesData = document.querySelector('#notes .notes-input')?.value || '';
-        const summaryData = document.querySelector('#summary .summary-input')?.value || '';
-        const categoryData = {
-          tasks: tasksData,
-          notes: notesData,
-          summary: summaryData
-        };
-        let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
-        categorySpecificData[currentCategory] = categoryData;
-        localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
+        const promptItem = span.parentElement;
+        const currentText = span.textContent;
+        const isImportant = promptItem.classList.contains('important');
+        const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+        promptItem.innerHTML = `
+          <input type="text" value="${currentText}" onblur="savePromptEdit(this)" onkeypress="if(event.key === 'Enter') savePromptEdit(this)">
+          <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+          <label for="${checkboxId}">Important</label>
+          <button onclick="deletePrompt(this)">Delete</button>
+        `;
+        promptItem.querySelector('input[type="text"]').focus();
       } catch (e) {
-        console.error('Error saving category-specific data:', e);
+        console.error("Error in editPrompt:", e);
       }
     }
 
-    function loadCategorySpecificData() {
+    function savePromptEdit(input) {
       try {
-        const currentCategory = categories[currentCategoryIndex];
-        const categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
-        const categoryData = categorySpecificData[currentCategory] || {};
-        const tasksData = categoryData.tasks || {
-          stage: "Scales",
-          date: formatDate(),
-          due: "TBC",
-          time: "",
-          notes: ""
-        };
-        const notesData = categoryData.notes || "";
-        const summaryData = categoryData.summary || "";
+        const promptItem = input.parentElement;
+        const newText = input.value.trim();
+        const isImportant = promptItem.classList.contains('important');
+        const checkboxId = promptItem.querySelector('input[type="checkbox"]').id;
+        if (newText) {
+          promptItem.innerHTML = `
+            <span ondblclick="editPrompt(this)">${newText}</span>
+            <input type="checkbox" id="${checkboxId}" ${isImportant ? 'checked' : ''} onchange="toggleImportant(this)">
+            <label for="${checkboxId}">Important</label>
+            <button onclick="deletePrompt(this)">Delete</button>
+          `;
+          if (isImportant) {
+            promptItem.classList.add('important');
+          }
+          saveGlobalData();
+        } else {
+          promptItem.remove();
+          saveGlobalData();
+        }
+      } catch (e) {
+        console.error("Error in savePromptEdit:", e);
+      }
+    }
+
+    function toggleImportant(checkbox) {
+      try {
+        const promptItem = checkbox.parentElement;
+        if (checkbox.checked) {
+          promptItem.classList.add('important');
+        } else {
+          promptItem.classList.remove('important');
+        }
+        saveGlobalData();
+      } catch (e) {
+        console.error("Error in toggleImportant:", e);
+      }
+    }
+
+    function deletePrompt(button) {
+      try {
+        button.parentElement.remove();
+        saveGlobalData();
+      } catch (e) {
+        console.error("Error in deletePrompt:", e);
+      }
+    }
+
+    function getRewards() {
+      try {
+        const rewardItems = document.querySelectorAll('#rewards-list .reward-item');
+        const rewards = [];
+        rewardItems.forEach(item => {
+          const text = item.querySelector('span')?.textContent;
+          if (text) rewards.push(text);
+        });
+        return rewards;
+      } catch (e) {
+        console.error("Error in getRewards:", e);
+        return [];
+      }
+    }
+
+    function populateRewards(rewards) {
+      try {
+        const list = document.getElementById('rewards-list');
+        if (list) {
+          list.innerHTML = '';
+          rewards.forEach((reward, index) => {
+            const rewardDiv = document.createElement('div');
+            rewardDiv.className = 'reward-item';
+            rewardDiv.innerHTML = `
+              <span ondblclick="editReward(this)">${reward}</span>
+              <button onclick="deleteReward(this)">Delete</button>
+            `;
+            list.appendChild(rewardDiv);
+          });
+        } else {
+          console.error("rewards-list element not found");
+        }
+      } catch (e) {
+        console.error("Error in populateRewards:", e);
+      }
+    }
+
+    function showAddRewardInput() {
+      try {
+        const list = document.getElementById('rewards-list');
+        if (list) {
+          const inputDiv = document.createElement('div');
+          inputDiv.className = 'reward-item';
+          inputDiv.innerHTML = `
+            <input type="text" placeholder="Enter new reward..." onblur="addReward(this)" onkeypress="if(event.key === 'Enter') addReward(this)">
+          `;
+          list.insertBefore(inputDiv, list.firstChild);
+          inputDiv.querySelector('input').focus();
+        } else {
+          console.error("rewards-list element not found");
+        }
+      } catch (e) {
+        console.error("Error in showAddRewardInput:", e);
+      }
+    }
+
+    function addReward(input) {
+      try {
+        const text = input.value.trim();
+        if (text) {
+          rewardCounter++;
+          const rewardDiv = document.createElement('div');
+          rewardDiv.className = 'reward-item';
+          rewardDiv.innerHTML = `
+            <span ondblclick="editReward(this)">${text}</span>
+            <button onclick="deleteReward(this)">Delete</button>
+          `;
+          input.parentElement.replaceWith(rewardDiv);
+          saveGlobalData();
+        } else {
+          input.parentElement.remove();
+        }
+      } catch (e) {
+        console.error("Error in addReward:", e);
+      }
+    }
+
+    function editReward(span) {
+      try {
+        const rewardItem = span.parentElement;
+        const currentText = span.textContent;
+        rewardItem.innerHTML = `
+          <input type="text" value="${currentText}" onblur="saveRewardEdit(this)" onkeypress="if(event.key === 'Enter') saveRewardEdit(this)">
+          <button onclick="deleteReward(this)">Delete</button>
+        `;
+        rewardItem.querySelector('input[type="text"]').focus();
+      } catch (e) {
+        console.error("Error in editReward:", e);
+      }
+    }
+
+    function saveRewardEdit(input) {
+      try {
+        const rewardItem = input.parentElement;
+        const newText = input.value.trim();
+        if (newText) {
+          rewardItem.innerHTML = `
+            <span ondblclick="editReward(this)">${newText}</span>
+            <button onclick="deleteReward(this)">Delete</button>
+          `;
+          saveGlobalData();
+        } else {
+          rewardItem.remove();
+          saveGlobalData();
+        }
+      } catch (e) {
+        console.error("Error in saveRewardEdit:", e);
+      }
+    }
+
+    function deleteReward(button) {
+      try {
+        button.parentElement.remove();
+        saveGlobalData();
+      } catch (e) {
+        console.error("Error in deleteReward:", e);
+      }
+    }
+
+    function addSaveEventListeners() {
+      try {
         const stage = document.getElementById('stage');
         const date = document.getElementById('date');
         const due = document.getElementById('due');
         const taskTime = document.getElementById('task-time');
         const taskNotes = document.getElementById('task-notes');
-        if (stage) stage.value = tasksData.stage;
-        if (date) date.value = tasksData.date;
-        if (due) due.value = tasksData.due;
-        if (taskTime) taskTime.value = tasksData.time;
-        if (taskNotes) taskNotes.value = tasksData.notes;
-        updatePBDetails();
         const notesInput = document.querySelector('#notes .notes-input');
         const summaryInput = document.querySelector('#summary .summary-input');
-        if (notesInput) notesInput.value = notesData;
-        if (summaryInput) summaryInput.value = summaryData;
+        if (stage) stage.addEventListener('input', saveCategorySpecificData);
+        if (date) date.addEventListener('input', saveCategorySpecificData);
+        if (due) date.addEventListener('input', saveCategorySpecificData);
+        if (taskTime) taskTime.addEventListener('input', saveCategorySpecificData);
+        if (taskNotes) taskNotes.addEventListener('input', saveCategorySpecificData);
+        if (notesInput) notesInput.addEventListener('input', saveCategorySpecificData);
+        if (summaryInput) summaryInput.addEventListener('input', saveCategorySpecificData);
       } catch (e) {
-        console.error('Error loading category-specific data:', e);
-        const stage = document.getElementById('stage');
-        const date = document.getElementById('date');
-        const due = document.getElementById('due');
-        const taskTime = document.getElementById('task-time');
-        const taskNotes = document.getElementById('task-notes');
-        if (stage) stage.value = "Scales";
-        if (date) date.value = formatDate();
-        if (due) due.value = "TBC";
-        if (taskTime) taskTime.value = "";
-        if (taskNotes) taskNotes.value = "";
-        const notesInput = document.querySelector('#notes .notes-input');
-        const summaryInput = document.querySelector('#summary .summary-input');
-        if (notesInput) notesInput.value = "";
-        if (summaryInput) summaryInput.value = "";
-        updatePBDetails();
+        console.error("Error in addSaveEventListeners:", e);
       }
     }
 
-    function saveCategories() {
+    document.addEventListener('DOMContentLoaded', () => {
       try {
-        const categoriesData = {
-          categories: categories,
-          currentCategoryIndex: currentCategoryIndex
-        };
-        localStorage.setItem('categoriesData', JSON.stringify(categoriesData));
+        console.log('DOM loaded, initializing app');
+        const promptDisplay = document.getElementById('promptDisplay');
+        if (!promptDisplay) console.error("promptDisplay element not found");
+        loadCategories();
+        setupCategorySwipe();
+        setupTabSwipe();
+        loadGlobalData();
+        loadCategorySpecificData();
+        addSaveEventListeners();
+        resetTimer();
+        displaySequentialPrompt();
+        showTab('pb');
       } catch (e) {
-        console.error('Error saving categories:', e);
+        console.error('Initialization error:', e);
       }
-    }
-
-    function loadCategories() {
-      try {
-        const categoriesData = JSON.parse(localStorage.getItem('categoriesData')) || {};
-        categories = categoriesData.categories || ['Home', 'Life', 'Work', 'School', 'Music Practice'];
-        currentCategoryIndex = categoriesData.currentCategoryIndex || 4;
-        if (currentCategoryIndex >= categories.length) {
-          currentCategoryIndex = categories.length - 1;
-        }
-        const categoryHeader = document.getElementById('category-header');
-        if (categoryHeader) {
-          categoryHeader.textContent = categories[currentCategoryIndex];
-        } else {
-          console.error("category-header element not found");
-        }
-      } catch (e) {
-        console.error('Error loading categories:', e);
-        categories = ['Home', 'Life', 'Work', 'School', 'Music Practice'];
-        currentCategoryIndex = 4;
-        const categoryHeader = document.getElementById('category-header');
-        if (categoryHeader) {
-          categoryHeader.textContent = categories[currentCategoryIndex];
-        }
-      }
-    }
-
-    function addCategory() {
-      try {
-        const container = document.querySelector('.category-container');
-        if (container) {
-          container.innerHTML = `
-            <button onclick="removeCategory()">-</button>
-            <input type="text" class="category-input" placeholder="Enter new category..." onblur="saveCategory(this)" onkeypress="if(event.key === 'Enter') saveCategory(this)">
-            <button onclick="addCategory()">+</button>
-          `;
-          container.querySelector('input').focus();
-        } else {
-          console.error("category-container not found");
-        }
-      } catch (e) {
-        console.error("Error in addCategory:", e);
-      }
-    }
-
-    function saveCategory(input) {
-      try {
-        const newCategory = input.value.trim();
-        if (newCategory) {
-          categories.push(newCategory);
-          saveCategorySpecificData();
-          currentCategoryIndex = categories.length - 1;
-          saveCategories();
-        }
-        const container = document.querySelector('.category-container');
-        if (container) {
-          container.innerHTML = `
-            <button onclick="removeCategory()">-</button>
-            <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
-            <button onclick="addCategory()">+</button>
-          `;
-          const newCategoryHeader = document.getElementById('category-header');
-          if (newCategoryHeader) {
-            newCategoryHeader.addEventListener('touchstart', (e) => {
-              touchStartX = e.changedTouches[0].screenX;
-            });
-            newCategoryHeader.addEventListener('touchend', (e) => {
-              touchEndX = e.changedTouches[0].screenX;
-              handleCategorySwipe();
-            });
-          }
-          loadCategorySpecificData();
-        } else {
-          console.error("category-container not found");
-        }
-      } catch (e) {
-        console.error("Error in saveCategory:", e);
-      }
-    }
-
-    function removeCategory() {
-      try {
-        if (categories.length <= 1) {
-          alert('Cannot remove the last category. At least one category is required.');
-          return;
-        }
-        pendingDeleteIndex = currentCategoryIndex;
-        const categoryName = categories[currentCategoryIndex];
-        const dialog = document.getElementById('confirmationDialog');
-        const message = document.getElementById('confirmationMessage');
-        if (dialog && message) {
-          message.textContent = `Are you sure you want to delete '${categoryName}'?`;
-          dialog.classList.add('active');
-        } else {
-          console.error("Confirmation dialog elements not found");
-        }
-      } catch (e) {
-        console.error("Error in removeCategory:", e);
-      }
-    }
-
-    function confirmDeleteCategory(confirm) {
-      try {
-        const dialog = document.getElementById('confirmationDialog');
-        if (dialog) {
-          dialog.classList.remove('active');
-        }
-        if (confirm && pendingDeleteIndex !== null) {
-          const categoryToRemove = categories[pendingDeleteIndex];
-          categories.splice(pendingDeleteIndex, 1);
-          currentCategoryIndex = Math.min(pendingDeleteIndex, categories.length - 1);
-          if (categories.length === 0) {
-            categories = ['Default'];
-            currentCategoryIndex = 0;
-          }
-          try {
-            let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
-            delete categorySpecificData[categoryToRemove];
-            localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
-          } catch (e) {
-            console.error('Error removing category-specific data:', e);
-          }
-          saveCategories();
-          const categoryHeader = document.getElementById('category-header');
-          if (categoryHeader) {
-            categoryHeader.textContent = categories[currentCategoryIndex];
-            loadCategorySpecificData();
-          }
-        }
-        pendingDeleteIndex = null;
-      } catch (e) {
-        console.error("Error in confirmDeleteCategory:", e);
-      }
-    }
-
-    function parseTimeInput(input) {
-      try {
-        if (!input) return 0;
-        input = input.trim().toLowerCase();
-        if (input.includes(':')) {
-          const parts = input.split(':').map(n => parseInt(n));
-          let minutes = 0, seconds = 0;
-          if (parts.length === 2) {
-            [minutes, seconds] = parts;
-          }
-          return (isNaN(minutes) ? 0 : minutes * 60) + (isNaN(seconds) ? 0 : seconds);
-        } else {
-          const num = parseInt(input);
-          return isNaN(num) ? 0 : num;
-        }
-      } catch (e) {
-        console.error("Error in parseTimeInput:", e);
-        return 0;
-      }
-    }
-
-    function showTab(tabId) {
-      try {
-        const previousTabIndex = currentTabIndex;
-        currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
-        const direction = currentTabIndex > previousTabIndex ? 'left' : 'right';
-        document.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          content.style.transform = 'translateX(0)';
-        });
-        document.querySelectorAll('.tab').forEach(tab => {
-          tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          tab.style.transform = 'translateX(0)';
-        });
-        const targetContent = document.getElementById(tabId);
-        const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
-        if (targetContent && targetTab) {
-          targetContent.classList.add('active');
-          targetContent.style.display = 'flex';
-          targetTab.classList.add('active');
-          targetTab.style.display = 'inline-block';
-          if (previousTabIndex !== currentTabIndex) {
-            const previousContent = document.getElementById(tabs[previousTabIndex].id);
-            const previousTab = document.querySelector(`.tab[data-tab="${tabs[previousTabIndex].id}"]`);
-            if (previousContent && previousTab) {
-              previousContent.style.display = 'flex';
-              previousTab.style.display = 'inline-block';
-              previousTab.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
-              previousContent.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
-              targetContent.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-
+    });
+  </script>
+</body>
+</html>
