@@ -103,7 +103,7 @@
       font-size: 0.85rem;
       text-align: center;
       opacity: 0;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease-in-out;
+      transition: transform 0.8s cubic-bezier(0.33, 0, 0.67, 1), opacity 0.8s cubic-bezier(0.33, 0, 0.67, 1), color 0.3s ease-in-out;
       touch-action: pan-y;
       position: absolute;
       display: none;
@@ -146,24 +146,20 @@
       top: 0;
       left: 0;
       transform: translateX(0);
-      opacity: 0;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.8s cubic-bezier(0.33, 0, 0.67, 1);
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
       position: static;
-      opacity: 1;
     }
     .tab-content.transitioning-left {
       display: flex;
       transform: translateX(-100%);
-      opacity: 0;
     }
     .tab-content.transitioning-right {
       display: flex;
       transform: translateX(100%);
-      opacity: 0;
     }
     .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
@@ -758,10 +754,8 @@
           nextTab.style.opacity = 1 - opacity;
           nextTab.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
           currentContent.style.transform = `translateX(${translatePercentage}%)`;
-          currentContent.style.opacity = opacity;
           nextContent.style.display = 'flex';
           nextContent.style.transform = `translateX(${translatePercentage + (tabTouchDeltaX < 0 ? 100 : -100)}%)`;
-          nextContent.style.opacity = 1 - opacity;
           nextContent.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
         }
       } catch (e) {
@@ -781,7 +775,6 @@
         });
         document.querySelectorAll('.tab-content').forEach(content => {
           content.style.transform = 'translateX(0)';
-          content.style.opacity = 0;
           content.classList.remove('transitioning-left', 'transitioning-right');
           if (!content.classList.contains('active')) {
             content.style.display = 'none';
@@ -814,7 +807,7 @@
     function getNextPrompt() {
       try {
         const prompts = getPrompts();
-        if (!prompts || prompts.length === 0) {
+        if (! prompts || prompts.length === 0) {
           return null;
         }
         let storedIndex = localStorage.getItem('currentPromptIndex');
@@ -1274,7 +1267,6 @@
           content.classList.remove('active', 'transitioning-left', 'transitioning-right');
           content.style.display = 'none';
           content.style.transform = 'translateX(0)';
-          content.style.opacity = 0;
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
@@ -1298,18 +1290,15 @@
               previousTab.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
               previousContent.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
               targetContent.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
-              targetContent.style.opacity = 0;
               targetTab.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
               targetTab.style.opacity = 0;
               setTimeout(() => {
                 targetContent.style.transform = 'translateX(0)';
-                targetContent.style.opacity = 1;
                 targetTab.style.transform = 'translateX(0)';
                 targetTab.style.opacity = 1;
               }, 10);
             }
           } else {
-            targetContent.style.opacity = 1;
             targetTab.style.opacity = 1;
           }
         } else {
