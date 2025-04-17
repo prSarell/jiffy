@@ -103,7 +103,7 @@
       font-size: 0.85rem;
       text-align: center;
       opacity: 0;
-      transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, color 0.3s ease-in-out;
+      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, color 0.3s ease-in-out;
       touch-action: pan-y;
       position: absolute;
       display: none;
@@ -128,16 +128,38 @@
       color: #999;
       transform: translateX(100%);
     }
+    .tab-content-container {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      background-color: #1a1a1a;
+    }
     .tab-content {
       display: none;
       padding: 10px;
       flex: 1;
       overflow-y: auto;
       background-color: #1a1a1a;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      transform: translateX(0);
+      transition: transform 0.5s ease-in-out;
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
+      position: static;
+    }
+    .tab-content.transitioning-left {
+      display: flex;
+      transform: translateX(-100%);
+    }
+    .tab-content.transitioning-right {
+      display: flex;
+      transform: translateX(100%);
     }
     .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
@@ -562,76 +584,78 @@
       <div class="tab" data-tab="rewards">Rewards</div>
     </div>
   </div>
-  <div id="tasks" class="tab-content">
-    <div class="task-header">
-      <div class="fields">
-        <div class="field">
-          <label for="stage">Stage</label>
-          <input id="stage" type="text" value="Scales">
+  <div class="tab-content-container">
+    <div id="tasks" class="tab-content">
+      <div class="task-header">
+        <div class="fields">
+          <div class="field">
+            <label for="stage">Stage</label>
+            <input id="stage" type="text" value="Scales">
+          </div>
+          <div class="field">
+            <label for="date">Date</label>
+            <input id="date" type="text" readonly>
+          </div>
+          <div class="field">
+            <label for="due">Due</label>
+            <input id="due" type="text" value="TBC">
+          </div>
+          <div class="field">
+            <label for="task-time">Time</label>
+            <input id="task-time" type="text" placeholder="e.g., 1:30:00 or 30 min">
+          </div>
         </div>
-        <div class="field">
-          <label for="date">Date</label>
-          <input id="date" type="text" readonly>
-        </div>
-        <div class="field">
-          <label for="due">Due</label>
-          <input id="due" type="text" value="TBC">
-        </div>
-        <div class="field">
-          <label for="task-time">Time</label>
-          <input id="task-time" type="text" placeholder="e.g., 1:30:00 or 30 min">
+      </div>
+      <textarea id="task-notes" placeholder="Write your notes here..."></textarea>
+    </div>
+    <div id="pb" class="tab-content active">
+      <div class="pb-details">
+        <div>Stage: <span id="pb-stage"></span></div>
+        <div>Date: <span id="pb-date"></span></div>
+        <div>Due: <span id="pb-due"></span></div>
+        <div>Time: <span id="pb-time"></span></div>
+      </div>
+      <div class="pb-controls">
+        <button id="start-pause-btn" onclick="toggleStartPause()">Start</button>
+        <button onclick="completeTimer()">Complete</button>
+        <button onclick="resetTimer()">Reset</button>
+      </div>
+      <div class="pb-timer">
+        <div class="timer-container">
+          <svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" class="timer-circle">
+            <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
+            <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
+          </svg>
+          <div id="pb-timer" class="timer-display">00:00:00</div>
         </div>
       </div>
     </div>
-    <textarea id="task-notes" placeholder="Write your notes here..."></textarea>
-  </div>
-  <div id="pb" class="tab-content active">
-    <div class="pb-details">
-      <div>Stage: <span id="pb-stage"></span></div>
-      <div>Date: <span id="pb-date"></span></div>
-      <div>Due: <span id="pb-due"></span></div>
-      <div>Time: <span id="pb-time"></span></div>
-    </div>
-    <div class="pb-controls">
-      <button id="start-pause-btn" onclick="toggleStartPause()">Start</button>
-      <button onclick="completeTimer()">Complete</button>
-      <button onclick="resetTimer()">Reset</button>
-    </div>
-    <div class="pb-timer">
-      <div class="timer-container">
-        <svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" class="timer-circle">
-          <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
-          <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
-        </svg>
-        <div id="pb-timer" class="timer-display">00:00:00</div>
+    <div id="prompts" class="tab-content">
+      <div class="prompts-header">
+        <div>
+          <label for="prompt-interval">Prompt Interval (MM:SS)</label>
+          <input id="prompt-interval" type="text" value="00:30" placeholder="e.g., 00:30">
+        </div>
+        <button onclick="showAddPromptInput()">Add Prompt</button>
       </div>
+      <div class="prompts-list" id="prompts-list"></div>
     </div>
-  </div>
-  <div id="prompts" class="tab-content">
-    <div class="prompts-header">
-      <div>
-        <label for="prompt-interval">Prompt Interval (MM:SS)</label>
-        <input id="prompt-interval" type="text" value="00:30" placeholder="e.g., 00:30">
+    <div id="notes" class="tab-content">
+      <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
+    </div>
+    <div id="summary" class="tab-content">
+      <textarea class="summary-input" placeholder="Summary notes will appear here..."></textarea>
+    </div>
+    <div id="rewards" class="tab-content">
+      <div class="rewards-header">
+        <div>
+          <label for="rewards-interval">Reward Interval (MM:SS)</label>
+          <input id="rewards-interval" type="text" value="00:30" placeholder="e.g., 00:30">
+        </div>
+        <button onclick="showAddRewardInput()">Add Reward</button>
       </div>
-      <button onclick="showAddPromptInput()">Add Prompt</button>
+      <div class="rewards-list" id="rewards-list"></div>
     </div>
-    <div class="prompts-list" id="prompts-list"></div>
-  </div>
-  <div id="notes" class="tab-content">
-    <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
-  </div>
-  <div id="summary" class="tab-content">
-    <textarea class="summary-input" placeholder="Summary notes will appear here..."></textarea>
-  </div>
-  <div id="rewards" class="tab-content">
-    <div class="rewards-header">
-      <div>
-        <label for="rewards-interval">Reward Interval (MM:SS)</label>
-        <input id="rewards-interval" type="text" value="00:30" placeholder="e.g., 00:30">
-      </div>
-      <button onclick="showAddRewardInput()">Add Reward</button>
-    </div>
-    <div class="rewards-list" id="rewards-list"></div>
   </div>
   <script>
     console.log('Jiffy script loaded, standalone:', window.navigator.standalone);
@@ -668,8 +692,14 @@
     function setupTabSwipe() {
       try {
         const tabContainer = document.querySelector('.tab-container');
-        if (tabContainer) {
+        const contentContainer = document.querySelector('.tab-content-container');
+        if (tabContainer && contentContainer) {
           tabContainer.addEventListener('touchstart', (e) => {
+            tabTouchStartX = e.changedTouches[0].screenX;
+            tabTouchCurrentX = tabTouchStartX;
+            isSwiping = true;
+          });
+          contentContainer.addEventListener('touchstart', (e) => {
             tabTouchStartX = e.changedTouches[0].screenX;
             tabTouchCurrentX = tabTouchStartX;
             isSwiping = true;
@@ -681,13 +711,25 @@
               updateTabPosition();
             }
           });
+          contentContainer.addEventListener('touchmove', (e) => {
+            if (isSwiping) {
+              tabTouchCurrentX = e.changedTouches[0].screenX;
+              tabTouchDeltaX = tabTouchCurrentX - tabTouchStartX;
+              updateTabPosition();
+            }
+          });
           tabContainer.addEventListener('touchend', (e) => {
             isSwiping = false;
             handleTabSwipe();
             resetTabPositions();
           });
+          contentContainer.addEventListener('touchend', (e) => {
+            isSwiping = false;
+            handleTabSwipe();
+            resetTabPositions();
+          });
         } else {
-          console.error("tab-container not found");
+          console.error("tab-container or content-container not found");
         }
       } catch (e) {
         console.error("Error in setupTabSwipe:", e);
@@ -699,14 +741,21 @@
         const currentTab = document.querySelector(`.tab[data-tab="${tabs[currentTabIndex].id}"]`);
         const nextTabIndex = tabTouchDeltaX < 0 ? (currentTabIndex + 1) % tabs.length : (currentTabIndex - 1 + tabs.length) % tabs.length;
         const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextTabIndex].id}"]`);
-        if (currentTab && nextTab) {
+        const currentContent = document.getElementById(tabs[currentTabIndex].id);
+        const nextContent = document.getElementById(tabs[nextTabIndex].id);
+        if (currentTab && nextTab && currentContent && nextContent) {
           const translateX = tabTouchDeltaX;
+          const translatePercentage = (tabTouchDeltaX / window.innerWidth) * 100;
           currentTab.style.transform = `translateX(${translateX}px)`;
           currentTab.style.opacity = 1 - Math.min(Math.abs(tabTouchDeltaX) / 100, 0.5);
           nextTab.style.display = 'inline-block';
           nextTab.style.transform = `translateX(${translateX + (tabTouchDeltaX < 0 ? 100 : -100)}px)`;
           nextTab.style.opacity = Math.min(Math.abs(tabTouchDeltaX) / 100, 0.5);
           nextTab.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
+          currentContent.style.transform = `translateX(${translatePercentage}%)`;
+          nextContent.style.display = 'flex';
+          nextContent.style.transform = `translateX(${translatePercentage + (tabTouchDeltaX < 0 ? 100 : -100)}%)`;
+          nextContent.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
         }
       } catch (e) {
         console.error("Error in updateTabPosition:", e);
@@ -723,6 +772,13 @@
             tab.style.display = 'none';
           }
         });
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.style.transform = 'translateX(0)';
+          content.classList.remove('transitioning-left', 'transitioning-right');
+          if (!content.classList.contains('active')) {
+            content.style.display = 'none';
+          }
+        });
       } catch (e) {
         console.error("Error in resetTabPositions:", e);
       }
@@ -730,13 +786,11 @@
 
     function handleTabSwipe() {
       try {
-        const swipeThreshold = 50;
+        const swipeThreshold = 80; // Adjusted for better sensitivity
         let nextTabIndex = currentTabIndex;
         if (tabTouchDeltaX < -swipeThreshold) {
-          // Swipe left
           nextTabIndex = (currentTabIndex + 1) % tabs.length;
         } else if (tabTouchDeltaX > swipeThreshold) {
-          // Swipe right
           nextTabIndex = (currentTabIndex - 1 + tabs.length) % tabs.length;
         }
         if (nextTabIndex !== currentTabIndex) {
@@ -749,7 +803,6 @@
       }
     }
 
-    // Get the next prompt in sequence
     function getNextPrompt() {
       try {
         const prompts = getPrompts();
@@ -771,7 +824,6 @@
       }
     }
 
-    // Display prompt in-app sequentially with fade effect
     function displaySequentialPrompt() {
       try {
         const display = document.getElementById('promptDisplay');
@@ -808,7 +860,6 @@
       }
     }
 
-    // Reward Pop-Up Functions
     function showRewardPopup(rewardText) {
       try {
         const popup = document.getElementById('rewardPopup');
@@ -837,7 +888,6 @@
       }
     }
 
-    // Category swipe functionality
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -882,7 +932,6 @@
       }
     }
 
-    // Save and Load Functions
     function saveGlobalData() {
       try {
         const prompts = getPrompts();
@@ -1210,12 +1259,16 @@
 
     function showTab(tabId) {
       try {
+        const previousTabIndex = currentTabIndex;
+        currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
+        const direction = currentTabIndex > previousTabIndex ? 'left' : 'right';
         document.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.remove('active');
+          content.classList.remove('active', 'transitioning-left', 'transitioning-right');
+          content.style.display = 'none';
+          content.style.transform = 'translateX(0)';
         });
         document.querySelectorAll('.tab').forEach(tab => {
-          tab.classList.remove('active');
-          tab.classList.remove('transitioning-left', 'transitioning-right');
+          tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
           tab.style.display = 'none';
           tab.style.transform = 'translateX(0)';
           tab.style.opacity = 0;
@@ -1224,10 +1277,28 @@
         const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
         if (targetContent && targetTab) {
           targetContent.classList.add('active');
+          targetContent.style.display = 'flex';
           targetTab.classList.add('active');
           targetTab.style.display = 'inline-block';
           targetTab.style.opacity = 1;
-          currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
+          if (previousTabIndex !== currentTabIndex) {
+            const previousContent = document.getElementById(tabs[previousTabIndex].id);
+            const previousTab = document.querySelector(`.tab[data-tab="${tabs[previousTabIndex].id}"]`);
+            if (previousContent && previousTab) {
+              previousContent.style.display = 'flex';
+              previousTab.style.display = 'inline-block';
+              previousTab.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
+              previousContent.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
+              targetContent.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
+              targetTab.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
+              targetTab.style.opacity = 0;
+              setTimeout(() => {
+                targetContent.style.transform = 'translateX(0)';
+                targetTab.style.transform = 'translateX(0)';
+                targetTab.style.opacity = 1;
+              }, 10);
+            }
+          }
         } else {
           console.error(`Tab or content not found for: ${tabId}`);
         }
@@ -1392,7 +1463,6 @@
       }
     }
 
-    // Prompt Display Functions
     function getPrompts() {
       try {
         const promptItems = document.querySelectorAll('#prompts-list .prompt-item');
@@ -1545,7 +1615,6 @@
       }
     }
 
-    // Rewards Tab Functions
     function getRewards() {
       try {
         const rewardItems = document.querySelectorAll('#rewards-list .reward-item');
@@ -1665,7 +1734,6 @@
       }
     }
 
-    // Add event listeners for saving category-specific data
     function addSaveEventListeners() {
       try {
         const stage = document.getElementById('stage');
@@ -1687,7 +1755,6 @@
       }
     }
 
-    // Initialize the app
     document.addEventListener('DOMContentLoaded', () => {
       try {
         console.log('DOM loaded, initializing app');
@@ -1701,7 +1768,7 @@
         addSaveEventListeners();
         resetTimer();
         displaySequentialPrompt();
-        showTab('pb'); // Initialize with Pomo tab active
+        showTab('pb');
       } catch (e) {
         console.error('Initialization error:', e);
       }
