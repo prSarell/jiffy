@@ -124,7 +124,7 @@
       font-size: 0.85rem;
       text-align: center;
       opacity: 0;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease-in-out;
+      transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0), opacity 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0), color 0.3s ease-in-out;
       touch-action: pan-y;
       position: absolute;
       display: none;
@@ -169,25 +169,21 @@
       top: 0;
       left: 0;
       transform: translateX(0);
-      opacity: 0;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0);
       box-sizing: border-box;
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
       position: static;
-      opacity: 1;
     }
     .tab-content.transitioning-left {
       display: flex;
       transform: translateX(-100%);
-      opacity: 0;
     }
     .tab-content.transitioning-right {
       display: flex;
       transform: translateX(100%);
-      opacity: 0;
     }
     .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
@@ -756,51 +752,63 @@
     let tabTouchCurrentX = 0;
     let tabTouchDeltaX = 0;
     let isSwiping = false;
+    let lastTouchTime = 0;
+    let lastTouchX = 0;
+    let swipeVelocity = 0;
 
     function setupTabSwipe() {
       try {
         const tabContainer = document.querySelector('.tab-container');
         const contentContainer = document.querySelector('.tab-content-container');
         if (tabContainer && contentContainer) {
-          tabContainer.addEventListener('touchstart', (e) => {
-            tabTouchStartX = e.changedTouches[0].screenX;
-            tabTouchCurrentX = tabTouchStartX;
-            isSwiping = true;
-          });
-          contentContainer.addEventListener('touchstart', (e) => {
-            tabTouchStartX = e.changedTouches[0].screenX;
-            tabTouchCurrentX = tabTouchStartX;
-            isSwiping = true;
-          });
-          tabContainer.addEventListener('touchmove', (e) => {
-            if (isSwiping) {
-              tabTouchCurrentX = e.changedTouches[0].screenX;
-              tabTouchDeltaX = tabTouchCurrentX - tabTouchStartX;
-              updateTabPosition();
-            }
-          });
-          contentContainer.addEventListener('touchmove', (e) => {
-            if (isSwiping) {
-              tabTouchCurrentX = e.changedTouches[0].screenX;
-              tabTouchDeltaX = tabTouchCurrentX - tabTouchStartX;
-              updateTabPosition();
-            }
-          });
-          tabContainer.addEventListener('touchend', (e) => {
-            isSwiping = false;
-            handleTabSwipe();
-            resetTabPositions();
-          });
-          contentContainer.addEventListener('touchend', (e) => {
-            isSwiping = false;
-            handleTabSwipe();
-            resetTabPositions();
-          });
+          tabContainer.addEventListener('touchstart', handleTouchStart);
+          contentContainer.addEventListener('touchstart', handleTouchStart);
+          tabContainer.addEventListener('touchmove', handleTouchMove);
+          contentContainer.addEventListener('touchmove', handleTouchMove);
+          tabContainer.addEventListener('touchend', handleTouchEnd);
+          contentContainer.addEventListener('touchend', handleTouchEnd);
         } else {
           console.error("tab-container or content-container not found");
         }
       } catch (e) {
         console.error("Error in setupTabSwipe:", e);
+      }
+    }
+
+    function handleTouchStart(e) {
+      tabTouchStartX = e.changedTouches[0].screenX;
+      tabTouchCurrentX = tabTouchStartX;
+      lastTouchX = tabTouchStartX;
+      lastTouchTime = Date.now();
+      isSwiping = true;
+    }
+
+    function handleTouchMove(e) {
+      if (isSwiping) {
+        const currentTime = Date.now();
+        const currentX = e.changedTouches[0].screenX;
+        const timeDelta = currentTime - lastTouchTime;
+        const positionDelta = currentX - lastTouchX;
+
+        // Calculate velocity (pixels per second)
+        if (timeDelta > 0) {
+          swipeVelocity = positionDelta / (timeDelta / 1000);
+        }
+
+        tabTouchCurrentX = currentX;
+        tabTouchDeltaX = tabTouchCurrentX - tabTouchStartX;
+        lastTouchX = currentX;
+        lastTouchTime = currentTime;
+
+        updateTabPosition();
+      }
+    }
+
+    function handleTouchEnd(e) {
+      if (isSwiping) {
+        isSwiping = false;
+        handleTabSwipe();
+        resetTabPositions();
       }
     }
 
@@ -815,6 +823,10 @@
           const translateX = tabTouchDeltaX;
           const translatePercentage = (tabTouchDeltaX / window.innerWidth) * 100;
           const opacity = 1 - Math.min(Math.abs(translatePercentage) / 100, 0.5);
+          currentTab.style.transition = 'none';
+          nextTab.style.transition = 'none';
+          currentContent.style.transition = 'none';
+          nextContent.style.transition = 'none';
           currentTab.style.transform = `translateX(${translateX}px)`;
           currentTab.style.opacity = opacity;
           nextTab.style.display = 'inline-block';
@@ -822,10 +834,8 @@
           nextTab.style.opacity = 1 - opacity;
           nextTab.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
           currentContent.style.transform = `translateX(${translatePercentage}%)`;
-          currentContent.style.opacity = opacity;
           nextContent.style.display = 'flex';
           nextContent.style.transform = `translateX(${translatePercentage + (tabTouchDeltaX < 0 ? 100 : -100)}%)`;
-          nextContent.style.opacity = 1 - opacity;
           nextContent.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
         }
       } catch (e) {
@@ -836,6 +846,7 @@
     function resetTabPositions() {
       try {
         document.querySelectorAll('.tab').forEach(tab => {
+          tab.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0), opacity 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
           tab.style.transform = 'translateX(0)';
           tab.style.opacity = 0;
           tab.classList.remove('transitioning-left', 'transitioning-right');
@@ -844,8 +855,8 @@
           }
         });
         document.querySelectorAll('.tab-content').forEach(content => {
+          content.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
           content.style.transform = 'translateX(0)';
-          content.style.opacity = 0;
           content.classList.remove('transitioning-left', 'transitioning-right');
           if (!content.classList.contains('active')) {
             content.style.display = 'none';
@@ -858,13 +869,22 @@
 
     function handleTabSwipe() {
       try {
-        const swipeThreshold = 80;
+        const viewportWidth = window.innerWidth;
+        const swipeThreshold = viewportWidth * 0.5; // 50% of viewport width
+        const velocityThreshold = 300; // Pixels per second for fast swipe
         let nextTabIndex = currentTabIndex;
-        if (tabTouchDeltaX < -swipeThreshold) {
-          nextTabIndex = (currentTabIndex + 1) % tabs.length;
-        } else if (tabTouchDeltaX > swipeThreshold) {
-          nextTabIndex = (currentTabIndex - 1 + tabs.length) % tabs.length;
+
+        // Determine direction based on swipe distance or velocity
+        const absDeltaX = Math.abs(tabTouchDeltaX);
+        const absVelocity = Math.abs(swipeVelocity);
+        if (absDeltaX > swipeThreshold || absVelocity > velocityThreshold) {
+          if (tabTouchDeltaX < 0) {
+            nextTabIndex = (currentTabIndex + 1) % tabs.length;
+          } else if (tabTouchDeltaX > 0) {
+            nextTabIndex = (currentTabIndex - 1 + tabs.length) % tabs.length;
+          }
         }
+
         if (nextTabIndex !== currentTabIndex) {
           showTab(tabs[nextTabIndex].id);
         } else {
@@ -1338,7 +1358,6 @@
           content.classList.remove('active', 'transitioning-left', 'transitioning-right');
           content.style.display = 'none';
           content.style.transform = 'translateX(0)';
-          content.style.opacity = 0;
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
@@ -1362,18 +1381,15 @@
               previousTab.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
               previousContent.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
               targetContent.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
-              targetContent.style.opacity = 0;
               targetTab.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
               targetTab.style.opacity = 0;
               setTimeout(() => {
                 targetContent.style.transform = 'translateX(0)';
-                targetContent.style.opacity = 1;
                 targetTab.style.transform = 'translateX(0)';
                 targetTab.style.opacity = 1;
               }, 10);
             }
           } else {
-            targetContent.style.opacity = 1;
             targetTab.style.opacity = 1;
           }
         } else {
