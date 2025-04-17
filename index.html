@@ -99,6 +99,24 @@
     .prompt-display.hidden {
       opacity: 0;
     }
+    .tabs-wrapper {
+      position: relative;
+      flex: 1;
+      overflow-x: hidden;
+      overflow-y: hidden;
+      touch-action: pan-x;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .tabs-content-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      transform: translate3d(0, 0, 0);
+      transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0);
+      will-change: transform;
+    }
     .tabs {
       display: flex;
       justify-content: center;
@@ -117,7 +135,6 @@
       position: relative;
       width: 100%;
       overflow: hidden;
-      touch-action: pan-x;
     }
     .tab {
       padding: 6px 10px;
@@ -125,11 +142,9 @@
       color: #999;
       font-size: 0.85rem;
       text-align: center;
-      transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0), color 0.3s ease-in-out;
+      transition: color 0.3s ease-in-out;
       touch-action: pan-x;
       position: absolute;
-      transform: translate3d(0, 0, 0);
-      will-change: transform;
       z-index: 1;
     }
     .tab.active {
@@ -137,14 +152,6 @@
       font-weight: bold;
       position: static;
       z-index: 2;
-    }
-    .tab.transitioning-left {
-      transform: translate3d(-100%, 0, 0);
-      z-index: 1;
-    }
-    .tab.transitioning-right {
-      transform: translate3d(100%, 0, 0);
-      z-index: 1;
     }
     .tab-content-container {
       position: relative;
@@ -154,7 +161,6 @@
       background-color: #1a1a1a;
       width: 100%;
       box-sizing: border-box;
-      touch-action: pan-x;
     }
     .tab-content {
       padding: 10px;
@@ -166,26 +172,14 @@
       height: 100%;
       top: 0;
       left: 0;
-      transform: translate3d(100%, 0, 0);
-      transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0);
       box-sizing: border-box;
       touch-action: pan-x;
-      will-change: transform;
-      z-index: 1;
+      display: none;
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
-      transform: translate3d(0, 0, 0);
       z-index: 2;
-    }
-    .tab-content.transitioning-left {
-      transform: translate3d(-100%, 0, 0);
-      z-index: 1;
-    }
-    .tab-content.transitioning-right {
-      transform: translate3d(100%, 0, 0);
-      z-index: 1;
     }
     .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
@@ -642,87 +636,91 @@
     </div>
   </div>
   <div class="prompt-display" id="promptDisplay"></div>
-  <div class="tabs" id="tabs">
-    <div class="tab-container">
-      <div class="tab" data-tab="tasks">Tasks</div>
-      <div class="tab active" data-tab="pb">Pomo</div>
-      <div class="tab" data-tab="prompts">Prompts</div>
-      <div class="tab" data-tab="notes">Notes</div>
-      <div class="tab" data-tab="summary">Summary</div>
-      <div class="tab" data-tab="rewards">Rewards</div>
-    </div>
-  </div>
-  <div class="tab-content-container">
-    <div id="tasks" class="tab-content">
-      <div class="task-header">
-        <div class="fields">
-          <div class="field">
-            <label for="stage">Stage</label>
-            <input id="stage" type="text" value="Scales">
-          </div>
-          <div class="field">
-            <label for="date">Date</label>
-            <input id="date" type="text" readonly>
-          </div>
-          <div class="field">
-            <label for="due">Due</label>
-            <input id="due" type="text" value="TBC">
-          </div>
-          <div class="field">
-            <label for="task-time">Time</label>
-            <input id="task-time" type="text" placeholder="e.g., 1:30:00 or 30 min">
-          </div>
+  <div class="tabs-wrapper">
+    <div class="tabs-content-container" id="tabsContentContainer">
+      <div class="tabs" id="tabs">
+        <div class="tab-container">
+          <div class="tab" data-tab="tasks">Tasks</div>
+          <div class="tab active" data-tab="pb">Pomo</div>
+          <div class="tab" data-tab="prompts">Prompts</div>
+          <div class="tab" data-tab="notes">Notes</div>
+          <div class="tab" data-tab="summary">Summary</div>
+          <div class="tab" data-tab="rewards">Rewards</div>
         </div>
       </div>
-      <textarea id="task-notes" placeholder="Write your notes here..."></textarea>
-    </div>
-    <div id="pb" class="tab-content active">
-      <div class="pb-details">
-        <div>Stage: <span id="pb-stage"></span></div>
-        <div>Date: <span id="pb-date"></span></div>
-        <div>Due: <span id="pb-due"></span></div>
-        <div>Time: <span id="pb-time"></span></div>
-      </div>
-      <div class="pb-controls">
-        <button id="start-pause-btn" onclick="toggleStartPause()">Start</button>
-        <button onclick="completeTimer()">Complete</button>
-        <button onclick="resetTimer()">Reset</button>
-      </div>
-      <div class="pb-timer">
-        <div class="timer-container">
-          <svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" class="timer-circle">
-            <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
-            <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
-          </svg>
-          <div id="pb-timer" class="timer-display">00:00:00</div>
+      <div class="tab-content-container">
+        <div id="tasks" class="tab-content">
+          <div class="task-header">
+            <div class="fields">
+              <div class="field">
+                <label for="stage">Stage</label>
+                <input id="stage" type="text" value="Scales">
+              </div>
+              <div class="field">
+                <label for="date">Date</label>
+                <input id="date" type="text" readonly>
+              </div>
+              <div class="field">
+                <label for="due">Due</label>
+                <input id="due" type="text" value="TBC">
+              </div>
+              <div class="field">
+                <label for="task-time">Time</label>
+                <input id="task-time" type="text" placeholder="e.g., 1:30:00 or 30 min">
+              </div>
+            </div>
+          </div>
+          <textarea id="task-notes" placeholder="Write your notes here..."></textarea>
+        </div>
+        <div id="pb" class="tab-content active">
+          <div class="pb-details">
+            <div>Stage: <span id="pb-stage"></span></div>
+            <div>Date: <span id="pb-date"></span></div>
+            <div>Due: <span id="pb-due"></span></div>
+            <div>Time: <span id="pb-time"></span></div>
+          </div>
+          <div class="pb-controls">
+            <button id="start-pause-btn" onclick="toggleStartPause()">Start</button>
+            <button onclick="completeTimer()">Complete</button>
+            <button onclick="resetTimer()">Reset</button>
+          </div>
+          <div class="pb-timer">
+            <div class="timer-container">
+              <svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" class="timer-circle">
+                <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
+                <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
+              </svg>
+              <div id="pb-timer" class="timer-display">00:00:00</div>
+            </div>
+          </div>
+        </div>
+        <div id="prompts" class="tab-content">
+          <div class="prompts-header">
+            <div>
+              <label for="prompt-interval">Prompt Interval (MM:SS)</label>
+              <input id="prompt-interval" type="text" value="00:30" placeholder="e.g., 00:30">
+            </div>
+            <button onclick="showAddPromptInput()">Add Prompt</button>
+          </div>
+          <div class="prompts-list" id="prompts-list"></div>
+        </div>
+        <div id="notes" class="tab-content">
+          <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
+        </div>
+        <div id="summary" class="tab-content">
+          <textarea class="summary-input" placeholder="Summary notes will appear here..."></textarea>
+        </div>
+        <div id="rewards" class="tab-content">
+          <div class="rewards-header">
+            <div>
+              <label for="rewards-interval">Reward Interval (MM:SS)</label>
+              <input id="rewards-interval" type="text" value="00:30" placeholder="e.g., 00:30">
+            </div>
+            <button onclick="showAddRewardInput()">Add Reward</button>
+          </div>
+          <div class="rewards-list" id="rewards-list"></div>
         </div>
       </div>
-    </div>
-    <div id="prompts" class="tab-content">
-      <div class="prompts-header">
-        <div>
-          <label for="prompt-interval">Prompt Interval (MM:SS)</label>
-          <input id="prompt-interval" type="text" value="00:30" placeholder="e.g., 00:30">
-        </div>
-        <button onclick="showAddPromptInput()">Add Prompt</button>
-      </div>
-      <div class="prompts-list" id="prompts-list"></div>
-    </div>
-    <div id="notes" class="tab-content">
-      <textarea class="notes-input" placeholder="Enter your notes here..."></textarea>
-    </div>
-    <div id="summary" class="tab-content">
-      <textarea class="summary-input" placeholder="Summary notes will appear here..."></textarea>
-    </div>
-    <div id="rewards" class="tab-content">
-      <div class="rewards-header">
-        <div>
-          <label for="rewards-interval">Reward Interval (MM:SS)</label>
-          <input id="rewards-interval" type="text" value="00:30" placeholder="e.g., 00:30">
-        </div>
-        <button onclick="showAddRewardInput()">Add Reward</button>
-      </div>
-      <div class="rewards-list" id="rewards-list"></div>
     </div>
   </div>
   <script>
@@ -764,17 +762,13 @@
 
     function setupTabSwipe() {
       try {
-        const tabContainer = document.querySelector('.tab-container');
-        const contentContainer = document.querySelector('.tab-content-container');
-        if (tabContainer && contentContainer) {
-          tabContainer.addEventListener('touchstart', handleTouchStart);
-          contentContainer.addEventListener('touchstart', handleTouchStart);
-          tabContainer.addEventListener('touchmove', handleTouchMove);
-          contentContainer.addEventListener('touchmove', handleTouchMove);
-          tabContainer.addEventListener('touchend', handleTouchEnd);
-          contentContainer.addEventListener('touchend', handleTouchEnd);
+        const tabsWrapper = document.querySelector('.tabs-wrapper');
+        if (tabsWrapper) {
+          tabsWrapper.addEventListener('touchstart', handleTouchStart);
+          tabsWrapper.addEventListener('touchmove', handleTouchMove);
+          tabsWrapper.addEventListener('touchend', handleTouchEnd);
         } else {
-          console.error("tab-container or content-container not found");
+          console.error("tabs-wrapper not found");
         }
       } catch (e) {
         console.error("Error in setupTabSwipe:", e);
@@ -823,26 +817,18 @@
 
     function updateTabPosition() {
       try {
+        const container = document.getElementById('tabsContentContainer');
         const currentTab = document.querySelector(`.tab[data-tab="${tabs[currentTabIndex].id}"]`);
         const nextTabIndex = tabTouchDeltaX < 0 ? (currentTabIndex + 1) % tabs.length : (currentTabIndex - 1 + tabs.length) % tabs.length;
         const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextTabIndex].id}"]`);
         const currentContent = document.getElementById(tabs[currentTabIndex].id);
         const nextContent = document.getElementById(tabs[nextTabIndex].id);
-        if (currentTab && nextTab && currentContent && nextContent) {
-          const translateX = tabTouchDeltaX;
+        if (container && currentTab && nextTab && currentContent && nextContent) {
           const translatePercentage = (tabTouchDeltaX / window.innerWidth) * 100;
-          currentTab.style.transition = 'none';
-          nextTab.style.transition = 'none';
-          currentContent.style.transition = 'none';
-          nextContent.style.transition = 'none';
-          currentTab.style.transform = `translate3d(${translateX}px, 0, 0)`;
+          container.style.transition = 'none';
+          container.style.transform = `translate3d(${translatePercentage}%, 0, 0)`;
           nextTab.style.display = 'inline-block';
-          nextTab.style.transform = `translate3d(${translateX + (tabTouchDeltaX < 0 ? 100 : -100)}px, 0, 0)`;
-          nextTab.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
-          currentContent.style.transform = `translate3d(${translatePercentage}%, 0, 0)`;
           nextContent.style.display = 'flex';
-          nextContent.style.transform = `translate3d(${translatePercentage + (tabTouchDeltaX < 0 ? 100 : -100)}%, 0, 0)`;
-          nextContent.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
         }
       } catch (e) {
         console.error("Error in updateTabPosition:", e);
@@ -851,22 +837,19 @@
 
     function resetTabPositions() {
       try {
+        const container = document.getElementById('tabsContentContainer');
+        if (container) {
+          container.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
+          container.style.transform = 'translate3d(0, 0, 0)';
+        }
         document.querySelectorAll('.tab').forEach(tab => {
-          tab.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
-          tab.style.transform = 'translate3d(0, 0, 0)';
-          tab.classList.remove('transitioning-left', 'transitioning-right');
           if (!tab.classList.contains('active')) {
             tab.style.display = 'none';
           }
         });
         document.querySelectorAll('.tab-content').forEach(content => {
-          content.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
-          if (content.classList.contains('active')) {
-            content.style.transform = 'translate3d(0, 0, 0)';
-          } else {
-            content.style.transform = 'translate3d(100%, 0, 0)';
+          if (!content.classList.contains('active')) {
             content.style.display = 'none';
-            content.classList.remove('transitioning-left', 'transitioning-right');
           }
         });
       } catch (e) {
@@ -1360,18 +1343,15 @@
         const previousTabIndex = currentTabIndex;
         currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
         const direction = currentTabIndex > previousTabIndex ? 'left' : 'right';
+        const container = document.getElementById('tabsContentContainer');
 
         document.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          content.style.transform = direction === 'left' ? 'translate3d(-100%, 0, 0)' : 'translate3d(100%, 0, 0)';
-          content.style.zIndex = '1';
+          content.classList.remove('active');
           content.style.display = 'none';
         });
         document.querySelectorAll('.tab').forEach(tab => {
-          tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          tab.style.transform = direction === 'left' ? 'translate3d(-100%, 0, 0)' : 'translate3d(100%, 0, 0)';
+          tab.classList.remove('active');
           tab.style.display = 'none';
-          tab.style.zIndex = '1';
         });
 
         const targetContent = document.getElementById(tabId);
@@ -1379,10 +1359,8 @@
         if (targetContent && targetTab) {
           targetContent.classList.add('active');
           targetContent.style.display = 'flex';
-          targetContent.style.zIndex = '2';
           targetTab.classList.add('active');
           targetTab.style.display = 'inline-block';
-          targetTab.style.zIndex = '2';
 
           if (previousTabIndex !== currentTabIndex) {
             const previousContent = document.getElementById(tabs[previousTabIndex].id);
@@ -1390,18 +1368,13 @@
             if (previousContent && previousTab) {
               previousContent.style.display = 'flex';
               previousTab.style.display = 'inline-block';
-              previousTab.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
-              previousContent.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
-              targetContent.style.transform = direction === 'left' ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
-              targetTab.style.transform = direction === 'left' ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
+              container.style.transform = direction === 'left' ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
               setTimeout(() => {
-                targetContent.style.transform = 'translate3d(0, 0, 0)';
-                targetTab.style.transform = 'translate3d(0, 0, 0)';
+                container.style.transform = 'translate3d(0, 0, 0)';
               }, 20);
             }
           } else {
-            targetContent.style.transform = 'translate3d(0, 0, 0)';
-            targetTab.style.transform = 'translate3d(0, 0, 0)';
+            container.style.transform = 'translate3d(0, 0, 0)';
           }
         } else {
           console.error(`Tab or content not found for: ${tabId}`);
