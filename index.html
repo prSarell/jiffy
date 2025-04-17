@@ -128,8 +128,9 @@
       transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0), color 0.3s ease-in-out;
       touch-action: pan-x;
       position: absolute;
-      transform: translateX(0);
+      transform: translate3d(0, 0, 0);
       will-change: transform;
+      z-index: 1;
     }
     .tab.active {
       color: #fff;
@@ -138,11 +139,11 @@
       z-index: 2;
     }
     .tab.transitioning-left {
-      transform: translateX(-100%);
+      transform: translate3d(-100%, 0, 0);
       z-index: 1;
     }
     .tab.transitioning-right {
-      transform: translateX(100%);
+      transform: translate3d(100%, 0, 0);
       z-index: 1;
     }
     .tab-content-container {
@@ -165,7 +166,7 @@
       height: 100%;
       top: 0;
       left: 0;
-      transform: translateX(100%);
+      transform: translate3d(100%, 0, 0);
       transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0);
       box-sizing: border-box;
       touch-action: pan-x;
@@ -175,15 +176,15 @@
     .tab-content.active {
       display: flex;
       flex-direction: column;
-      transform: translateX(0);
+      transform: translate3d(0, 0, 0);
       z-index: 2;
     }
     .tab-content.transitioning-left {
-      transform: translateX(-100%);
+      transform: translate3d(-100%, 0, 0);
       z-index: 1;
     }
     .tab-content.transitioning-right {
-      transform: translateX(100%);
+      transform: translate3d(100%, 0, 0);
       z-index: 1;
     }
     .pb-details, .prompts-header, .rewards-header {
@@ -475,7 +476,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    Opaque elements should be placed on a single layer with a solid background color to prevent visual artifacts during transitions.
     .confirmation-buttons {
       display: flex;
       justify-content: center;
@@ -759,6 +759,8 @@
     let lastTouchTime = 0;
     let lastTouchX = 0;
     let swipeVelocity = 0;
+    let lastUpdateTime = 0;
+    const throttleDelay = 16; // Approximately 60fps
 
     function setupTabSwipe() {
       try {
@@ -784,12 +786,15 @@
       tabTouchCurrentX = tabTouchStartX;
       lastTouchX = tabTouchStartX;
       lastTouchTime = Date.now();
+      lastUpdateTime = 0;
       isSwiping = true;
     }
 
     function handleTouchMove(e) {
       if (isSwiping) {
         const currentTime = Date.now();
+        if (currentTime - lastUpdateTime < throttleDelay) return;
+
         const currentX = e.changedTouches[0].screenX;
         const timeDelta = currentTime - lastTouchTime;
         const positionDelta = currentX - lastTouchX;
@@ -802,6 +807,7 @@
         tabTouchDeltaX = tabTouchCurrentX - tabTouchStartX;
         lastTouchX = currentX;
         lastTouchTime = currentTime;
+        lastUpdateTime = currentTime;
 
         updateTabPosition();
       }
@@ -829,13 +835,13 @@
           nextTab.style.transition = 'none';
           currentContent.style.transition = 'none';
           nextContent.style.transition = 'none';
-          currentTab.style.transform = `translateX(${translateX}px)`;
+          currentTab.style.transform = `translate3d(${translateX}px, 0, 0)`;
           nextTab.style.display = 'inline-block';
-          nextTab.style.transform = `translateX(${translateX + (tabTouchDeltaX < 0 ? 100 : -100)}px)`;
+          nextTab.style.transform = `translate3d(${translateX + (tabTouchDeltaX < 0 ? 100 : -100)}px, 0, 0)`;
           nextTab.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
-          currentContent.style.transform = `translateX(${translatePercentage}%)`;
+          currentContent.style.transform = `translate3d(${translatePercentage}%, 0, 0)`;
           nextContent.style.display = 'flex';
-          nextContent.style.transform = `translateX(${translatePercentage + (tabTouchDeltaX < 0 ? 100 : -100)}%)`;
+          nextContent.style.transform = `translate3d(${translatePercentage + (tabTouchDeltaX < 0 ? 100 : -100)}%, 0, 0)`;
           nextContent.classList.add(tabTouchDeltaX < 0 ? 'transitioning-right' : 'transitioning-left');
         }
       } catch (e) {
@@ -847,7 +853,7 @@
       try {
         document.querySelectorAll('.tab').forEach(tab => {
           tab.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
-          tab.style.transform = 'translateX(0)';
+          tab.style.transform = 'translate3d(0, 0, 0)';
           tab.classList.remove('transitioning-left', 'transitioning-right');
           if (!tab.classList.contains('active')) {
             tab.style.display = 'none';
@@ -856,14 +862,11 @@
         document.querySelectorAll('.tab-content').forEach(content => {
           content.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
           if (content.classList.contains('active')) {
-            content.style.transform = 'translateX(0)';
-          } else if (content.classList.contains('transitioning-left')) {
-            content.style.transform = 'translateX(-100%)';
-          } else if (content.classList.contains('transitioning-right')) {
-            content.style.transform = 'translateX(100%)';
+            content.style.transform = 'translate3d(0, 0, 0)';
           } else {
-            content.style.transform = 'translateX(100%)';
+            content.style.transform = 'translate3d(100%, 0, 0)';
             content.style.display = 'none';
+            content.classList.remove('transitioning-left', 'transitioning-right');
           }
         });
       } catch (e) {
@@ -1360,12 +1363,13 @@
 
         document.querySelectorAll('.tab-content').forEach(content => {
           content.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          content.style.transform = direction === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
+          content.style.transform = direction === 'left' ? 'translate3d(-100%, 0, 0)' : 'translate3d(100%, 0, 0)';
           content.style.zIndex = '1';
+          content.style.display = 'none';
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
-          tab.style.transform = direction === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
+          tab.style.transform = direction === 'left' ? 'translate3d(-100%, 0, 0)' : 'translate3d(100%, 0, 0)';
           tab.style.display = 'none';
           tab.style.zIndex = '1';
         });
@@ -1388,16 +1392,16 @@
               previousTab.style.display = 'inline-block';
               previousTab.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
               previousContent.classList.add(direction === 'left' ? 'transitioning-left' : 'transitioning-right');
-              targetContent.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
-              targetTab.style.transform = direction === 'left' ? 'translateX(100%)' : 'translateX(-100%)';
+              targetContent.style.transform = direction === 'left' ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
+              targetTab.style.transform = direction === 'left' ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
               setTimeout(() => {
-                targetContent.style.transform = 'translateX(0)';
-                targetTab.style.transform = 'translateX(0)';
-              }, 10);
+                targetContent.style.transform = 'translate3d(0, 0, 0)';
+                targetTab.style.transform = 'translate3d(0, 0, 0)';
+              }, 20);
             }
           } else {
-            targetContent.style.transform = 'translateX(0)';
-            targetTab.style.transform = 'translateX(0)';
+            targetContent.style.transform = 'translate3d(0, 0, 0)';
+            targetTab.style.transform = 'translate3d(0, 0, 0)';
           }
         } else {
           console.error(`Tab or content not found for: ${tabId}`);
