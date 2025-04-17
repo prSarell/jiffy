@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Jiffy</title>
-  <link rel="manifest" href="/manifest.json?v=1">
+  <link rel="manifest" href="/manifest.json?v=10">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Jiffy">
@@ -68,7 +68,6 @@
       font-weight: bold;
       font-size: 0.9rem;
       color: #fff;
-      border-bottom: 1px solid #333;
       opacity: 1;
       transition: opacity 0.7s ease-in-out;
       min-height: 30px;
@@ -83,26 +82,28 @@
       display: flex;
       background-color: #000;
       padding: 6px 0;
-      overflow-x: auto;
+      justify-content: center;
+      overflow: hidden;
       white-space: nowrap;
-      -webkit-overflow-scrolling: touch;
-      border-bottom: 1px solid #333;
       position: relative;
       z-index: 1;
     }
     .tab {
-      padding: 6px 10px;
+      padding: 6px 15px;
       cursor: pointer;
       color: #999;
       font-size: 0.85rem;
-      flex: 1;
+      min-width: 60px;
       text-align: center;
-      min-width: 55px;
-      transition: color 0.2s ease;
+      opacity: 0.5;
+      transition: opacity 0.2s ease, color 0.2s ease;
+      flex-shrink: 0;
+      touch-action: pan-y;
     }
     .tab.active {
       color: #fff;
-      border-bottom: 2px solid #fff;
+      opacity: 1;
+      font-weight: bold;
     }
     .tab-content {
       display: none;
@@ -420,7 +421,7 @@
         padding: 5px 0;
       }
       .tab {
-        padding: 5px 8px;
+        padding: 5px 12px;
         font-size: 0.8rem;
         min-width: 50px;
       }
@@ -529,13 +530,13 @@
     </div>
   </div>
   <div class="prompt-display" id="promptDisplay"></div>
-  <div class="tabs">
-    <div class="tab" onclick="showTab('tasks')">Tasks</div>
-    <div class="tab active" onclick="showTab('pb')">Pomo</div>
-    <div class="tab" onclick="showTab('prompts')">Prompts</div>
-    <div class="tab" onclick="showTab('notes')">Notes</div>
-    <div class="tab" onclick="showTab('summary')">Summary</div>
-    <div class="tab" onclick="showTab('rewards')">Rewards</div>
+  <div class="tabs" id="tabs">
+    <div class="tab" data-tab="tasks">Tasks</div>
+    <div class="tab active" data-tab="pb">Pomo</div>
+    <div class="tab" data-tab="prompts">Prompts</div>
+    <div class="tab" data-tab="notes">Notes</div>
+    <div class="tab" data-tab="summary">Summary</div>
+    <div class="tab" data-tab="rewards">Rewards</div>
   </div>
   <div id="tasks" class="tab-content">
     <div class="task-header">
@@ -609,7 +610,7 @@
     <div class="rewards-list" id="rewards-list"></div>
   </div>
   <script>
-    console.log('Script loaded, standalone:', window.navigator.standalone);
+    console.log('Jiffy script loaded, standalone:', window.navigator.standalone);
 
     let timer = {
       totalSeconds: 0,
@@ -624,14 +625,60 @@
     let promptCounter = 0;
     let rewardCounter = 0;
     let currentPromptIndex = 0;
+    let currentTabIndex = 1; // Pomo is active by default
+    const tabs = [
+      { name: 'Tasks', id: 'tasks' },
+      { name: 'Pomo', id: 'pb' },
+      { name: 'Prompts', id: 'prompts' },
+      { name: 'Notes', id: 'notes' },
+      { name: 'Summary', id: 'summary' },
+      { name: 'Rewards', id: 'rewards' }
+    ];
+
+    // Tab swipe functionality
+    let tabTouchStartX = 0;
+    let tabTouchEndX = 0;
+
+    function setupTabSwipe() {
+      try {
+        const tabsContainer = document.getElementById('tabs');
+        if (tabsContainer) {
+          tabsContainer.addEventListener('touchstart', (e) => {
+            tabTouchStartX = e.changedTouches[0].screenX;
+          });
+          tabsContainer.addEventListener('touchend', (e) => {
+            tabTouchEndX = e.changedTouches[0].screenX;
+            handleTabSwipe();
+          });
+        } else {
+          console.error("tabs container not found");
+        }
+      } catch (e) {
+        console.error("Error in setupTabSwipe:", e);
+      }
+    }
+
+    function handleTabSwipe() {
+      try {
+        const swipeThreshold = 50;
+        if (tabTouchEndX < tabTouchStartX - swipeThreshold) {
+          // Swipe left
+          currentTabIndex = (currentTabIndex + 1) % tabs.length;
+        } else if (tabTouchEndX > tabTouchStartX + swipeThreshold) {
+          // Swipe right
+          currentTabIndex = (currentTabIndex - 1 + tabs.length) % tabs.length;
+        }
+        showTab(tabs[currentTabIndex].id);
+      } catch (e) {
+        console.error("Error in handleTabSwipe:", e);
+      }
+    }
 
     // Get the next prompt in sequence
     function getNextPrompt() {
       try {
-        console.log('Getting next prompt');
         const prompts = getPrompts();
         if (!prompts || prompts.length === 0) {
-          console.log("No prompts available");
           return null;
         }
         let storedIndex = localStorage.getItem('currentPromptIndex');
@@ -642,7 +689,6 @@
         const prompt = prompts[currentPromptIndex];
         currentPromptIndex = (currentPromptIndex + 1) % prompts.length;
         localStorage.setItem('currentPromptIndex', currentPromptIndex);
-        console.log('Next prompt:', prompt);
         return prompt;
       } catch (e) {
         console.error("Error in getNextPrompt:", e);
@@ -653,7 +699,6 @@
     // Display prompt in-app sequentially with fade effect
     function displaySequentialPrompt() {
       try {
-        console.log('Displaying sequential prompt');
         const display = document.getElementById('promptDisplay');
         if (!display) {
           console.error("promptDisplay element not found");
@@ -717,7 +762,7 @@
       }
     }
 
-    // Swipe functionality to switch between categories
+    // Category swipe functionality
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -727,12 +772,10 @@
         if (categoryHeader) {
           categoryHeader.addEventListener('touchstart', (e) => {
             touchStartX = e.changedTouches[0].screenX;
-            console.log('Touch start:', touchStartX);
           });
           categoryHeader.addEventListener('touchend', (e) => {
             touchEndX = e.changedTouches[0].screenX;
-            console.log('Touch end:', touchEndX);
-            handleSwipe();
+            handleCategorySwipe();
           });
         } else {
           console.error("category-header element not found");
@@ -742,7 +785,7 @@
       }
     }
 
-    function handleSwipe() {
+    function handleCategorySwipe() {
       try {
         const swipeThreshold = 50;
         if (touchEndX < touchStartX - swipeThreshold) {
@@ -756,12 +799,11 @@
         if (categoryHeader) {
           categoryHeader.textContent = categories[currentCategoryIndex];
           loadCategorySpecificData();
-          console.log('Switched to category:', categories[currentCategoryIndex]);
         } else {
           console.error("category-header element not found during swipe");
         }
       } catch (e) {
-        console.error("Error in handleSwipe:", e);
+        console.error("Error in handleCategorySwipe:", e);
       }
     }
 
@@ -772,7 +814,6 @@
         const rewards = getRewards();
         const globalData = { prompts, rewards };
         localStorage.setItem('globalData', JSON.stringify(globalData));
-        console.log('Global data saved:', globalData);
       } catch (e) {
         console.error('Error saving global data:', e);
       }
@@ -815,7 +856,6 @@
         populateRewards(rewards);
         promptCounter = prompts.length;
         rewardCounter = rewards.length;
-        console.log('Global data loaded:', globalData);
       } catch (e) {
         console.error('Error loading global data:', e);
         populatePrompts([
@@ -873,7 +913,6 @@
         let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
         categorySpecificData[currentCategory] = categoryData;
         localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
-        console.log(`Category-specific data saved for ${currentCategory}:`, categoryData);
       } catch (e) {
         console.error('Error saving category-specific data:', e);
       }
@@ -908,7 +947,6 @@
         const summaryInput = document.querySelector('#summary .summary-input');
         if (notesInput) notesInput.value = notesData;
         if (summaryInput) summaryInput.value = summaryData;
-        console.log(`Category-specific data loaded for ${currentCategory}:`, categoryData);
       } catch (e) {
         console.error('Error loading category-specific data:', e);
         const stage = document.getElementById('stage');
@@ -936,7 +974,6 @@
           currentCategoryIndex: currentCategoryIndex
         };
         localStorage.setItem('categoriesData', JSON.stringify(categoriesData));
-        console.log('Categories saved:', categoriesData);
       } catch (e) {
         console.error('Error saving categories:', e);
       }
@@ -956,7 +993,6 @@
         } else {
           console.error("category-header element not found");
         }
-        console.log('Categories loaded:', categoriesData);
       } catch (e) {
         console.error('Error loading categories:', e);
         categories = ['Home', 'Life', 'Work', 'School', 'Music Practice'];
@@ -1009,7 +1045,7 @@
             });
             newCategoryHeader.addEventListener('touchend', (e) => {
               touchEndX = e.changedTouches[0].screenX;
-              handleSwipe();
+              handleCategorySwipe();
             });
           }
           loadCategorySpecificData();
@@ -1097,27 +1133,24 @@
       }
     }
 
-    function showTab(tabName) {
+    function showTab(tabId) {
       try {
-        console.log(`Switching to tab: ${tabName}`);
         document.querySelectorAll('.tab-content').forEach(content => {
           content.classList.remove('active');
-          console.log(`Deactivating content: ${content.id}`);
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active');
-          console.log(`Deactivating tab: ${tab.textContent}`);
         });
-        const targetContent = document.getElementById(tabName);
-        const targetTab = document.querySelector(`.tab[onclick="showTab('${tabName}')"]`);
+        const targetContent = document.getElementById(tabId);
+        const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
         if (targetContent && targetTab) {
           targetContent.classList.add('active');
           targetTab.classList.add('active');
-          console.log(`Activated tab: ${tabName}`);
+          currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
         } else {
-          console.error(`Tab or content not found for: ${tabName}`);
+          console.error(`Tab or content not found for: ${tabId}`);
         }
-        if (tabName === 'pb') {
+        if (tabId === 'pb') {
           updatePBDetails();
           resetTimer();
         }
@@ -1551,7 +1584,7 @@
       }
     }
 
-    // Add event listeners for saving category-specific data
+    // Add event listeners for saving category-specific data and tab clicks
     function addSaveEventListeners() {
       try {
         const stage = document.getElementById('stage');
@@ -1561,36 +1594,312 @@
         const taskNotes = document.getElementById('task-notes');
         const notesInput = document.querySelector('#notes .notes-input');
         const summaryInput = document.querySelector('#summary .summary-input');
+        const tabElements = Array.from(document.querySelectorAll('.tab'));
         if (stage) stage.addEventListener('input', saveCategorySpecificData);
         if (date) date.addEventListener('input', saveCategorySpecificData);
         if (due) due.addEventListener('input', saveCategorySpecificData);
-        if (taskTime) taskTime.addEventListener('input', saveCategorySpecificData);
-        if (taskNotes) taskNotes.addEventListener('input', saveCategorySpecificData);
-        if (notesInput) notesInput.addEventListener('input', saveCategorySpecificData);
-        if (summaryInput) summaryInput.addEventListener('input', saveCategorySpecificData);
+        if (taskTime) taskTime.addEventListener('input', saveCategorySpecific'Tasks', id: 'tasks' },
+      { name: 'Pomo', id: 'pb' },
+      { name: 'Prompts', id: 'prompts' },
+      { name: 'Notes', id: 'notes' },
+      { name: 'Summary', id: 'summary' },
+      { name: 'Rewards', id: 'rewards' }
+    ];
+
+    // Tab swipe functionality
+    let tabTouchStartX = 0;
+    let tabTouchEndX = 0;
+
+    function setupTabSwipe() {
+      try {
+        const tabsContainer = document.getElementById('tabs');
+        if (tabsContainer) {
+          tabsContainer.addEventListener('touchstart', (e) => {
+            tabTouchStartX = e.changedTouches[0].screenX;
+          });
+          tabsContainer.addEventListener('touchend', (e) => {
+            tabTouchEndX = e.changedTouches[0].screenX;
+            handleTabSwipe();
+          });
+        } else {
+          console.error("tabs container not found");
+        }
       } catch (e) {
-        console.error("Error in addSaveEventListeners:", e);
+        console.error("Error in setupTabSwipe:", e);
       }
     }
 
-    // Initialize the app
-    document.addEventListener('DOMContentLoaded', () => {
+    function handleTabSwipe() {
       try {
-        console.log('DOM loaded, initializing app');
-        const promptDisplay = document.getElementById('promptDisplay');
-        if (!promptDisplay) console.error("promptDisplay element not found");
-        loadCategories();
-        setupCategorySwipe();
-        loadGlobalData();
-        loadCategorySpecificData();
-        addSaveEventListeners();
-        resetTimer();
-        displaySequentialPrompt();
-        showTab('pb');
+        const swipeThreshold = 50;
+        if (tabTouchEndX < tabTouchStartX - swipeThreshold) {
+          // Swipe left
+          currentTabIndex = (currentTabIndex + 1) % tabs.length;
+        } else if (tabTouchEndX > tabTouchStartX + swipeThreshold) {
+          // Swipe right
+          currentTabIndex = (currentTabIndex - 1 + tabs.length) % tabs.length;
+        }
+        showTab(tabs[currentTabIndex].id);
       } catch (e) {
-        console.error('Initialization error:', e);
+        console.error("Error in handleTabSwipe:", e);
       }
-    });
-  </script>
-</body>
-</html>
+    }
+
+    // Get the next prompt in sequence
+    function getNextPrompt() {
+      try {
+        const prompts = getPrompts();
+        if (!prompts || prompts.length === 0) {
+          return null;
+        }
+        let storedIndex = localStorage.getItem('currentPromptIndex');
+        currentPromptIndex = storedIndex !== null ? parseInt(storedIndex, 10) : 0;
+        if (currentPromptIndex >= prompts.length) {
+          currentPromptIndex = 0;
+        }
+        const prompt = prompts[currentPromptIndex];
+        currentPromptIndex = (currentPromptIndex + 1) % prompts.length;
+        localStorage.setItem('currentPromptIndex', currentPromptIndex);
+        return prompt;
+      } catch (e) {
+        console.error("Error in getNextPrompt:", e);
+        return null;
+      }
+    }
+
+    // Display prompt in-app sequentially with fade effect
+    function displaySequentialPrompt() {
+      try {
+        const display = document.getElementById('promptDisplay');
+        if (!display) {
+          console.error("promptDisplay element not found");
+          return;
+        }
+        const intervalInput = document.getElementById('prompt-interval');
+        if (!intervalInput) {
+          console.error("prompt-interval input not found");
+          return;
+        }
+        display.classList.add('hidden');
+        setTimeout(() => {
+          const prompt = getNextPrompt();
+          if (prompt) {
+            display.textContent = prompt.text;
+            if (prompt.isImportant) {
+              display.classList.add('important');
+            } else {
+              display.classList.remove('important');
+            }
+          } else {
+            display.textContent = 'No prompts set';
+          }
+          display.classList.remove('hidden');
+        }, 700);
+        let intervalSeconds = parseTimeInput(intervalInput.value);
+        if (intervalSeconds < 10) intervalSeconds = 30;
+        const intervalMs = intervalSeconds * 1000;
+        setTimeout(displaySequentialPrompt, intervalMs);
+      } catch (e) {
+        console.error("Error in displaySequentialPrompt:", e);
+      }
+    }
+
+    // Reward Pop-Up Functions
+    function showRewardPopup(rewardText) {
+      try {
+        const popup = document.getElementById('rewardPopup');
+        const message = document.getElementById('rewardMessage');
+        if (popup && message) {
+          message.textContent = rewardText;
+          popup.classList.add('active');
+        } else {
+          console.error("Reward popup elements not found");
+        }
+      } catch (e) {
+        console.error("Error in showRewardPopup:", e);
+      }
+    }
+
+    function closeRewardPopup() {
+      try {
+        const popup = document.getElementById('rewardPopup');
+        if (popup) {
+          popup.classList.remove('active');
+        } else {
+          console.error("Reward popup not found");
+        }
+      } catch (e) {
+        console.error("Error in closeRewardPopup:", e);
+      }
+    }
+
+    // Category swipe functionality
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    function setupCategorySwipe() {
+      try {
+        const categoryHeader = document.getElementById('category-header');
+        if (categoryHeader) {
+          categoryHeader.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+          });
+          categoryHeader.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleCategorySwipe();
+          });
+        } else {
+          console.error("category-header element not found");
+        }
+      } catch (e) {
+        console.error("Error in setupCategorySwipe:", e);
+      }
+    }
+
+    function handleCategorySwipe() {
+      try {
+        const swipeThreshold = 50;
+        if (touchEndX < touchStartX - swipeThreshold) {
+          saveCategorySpecificData();
+          currentCategoryIndex = (currentCategoryIndex + 1) % categories.length;
+        } else if (touchEndX > touchStartX + swipeThreshold) {
+          saveCategorySpecificData();
+          currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length;
+        }
+        const categoryHeader = document.getElementById('category-header');
+        if (categoryHeader) {
+          categoryHeader.textContent = categories[currentCategoryIndex];
+          loadCategorySpecificData();
+        } else {
+          console.error("category-header element not found during swipe");
+        }
+      } catch (e) {
+        console.error("Error in handleCategorySwipe:", e);
+      }
+    }
+
+    // Save and Load Functions
+    function saveGlobalData() {
+      try {
+        const prompts = getPrompts();
+        const rewards = getRewards();
+        const globalData = { prompts, rewards };
+        localStorage.setItem('globalData', JSON.stringify(globalData));
+      } catch (e) {
+        console.error('Error saving global data:', e);
+      }
+    }
+
+    function loadGlobalData() {
+      try {
+        const globalData = JSON.parse(localStorage.getItem('globalData')) || {};
+        const prompts = globalData.prompts || [
+          { text: "PAY PARKING FINE!!!", isImportant: true },
+          { text: "Get milk", isImportant: false },
+          { text: "Breathe", isImportant: false },
+          { text: "2pm Mtg!!!", isImportant: true }
+        ];
+        const rewards = globalData.rewards || [
+          "Great job, you smashed it!",
+          "You're killing it!",
+          "Fantastic work!",
+          "On fire",
+          "Yeah Bouy!",
+          "Fernsteuerung!",
+          "Way to go, superstar!",
+          "Crushing it!",
+          "Nailed it!",
+          "Bravo, that was amazing!",
+          "Impressive work, well done!",
+          "Smashing work Gromit!",
+          "Superb effort, keep shining!",
+          "You're unstoppable!",
+          "What a triumph!",
+          "Amazing job, keep up the great work!",
+          "Incredible, you're a rockstar!",
+          "Sensational performance!",
+          "Your productivity is inspiring!",
+          "Mike, you F*cken LEGEND!!!",
+          "They said you'd never make it, but you finally came through!",
+          "You’re a wizard Harry!"
+        ];
+        populatePrompts(prompts);
+        populateRewards(rewards);
+        promptCounter = prompts.length;
+        rewardCounter = rewards.length;
+      } catch (e) {
+        console.error('Error loading global data:', e);
+        populatePrompts([
+          { text: "PAY PARKING FINE!!!", isImportant: true },
+          { text: "Get milk", isImportant: false },
+          { text: "Breathe", isImportant: false },
+          { text: "2pm Mtg!!!", isImportant: true }
+        ]);
+        populateRewards([
+          "Great job, you smashed it!",
+          "You're killing it!",
+          "Fantastic work!",
+          "On fire",
+          "Yeah Bouy!",
+          "Fernsteuerung!",
+          "Way to go, superstar!",
+          "Crushing it!",
+          "Nailed it!",
+          "Bravo, that was amazing!",
+          "Impressive work, well done!",
+          "Smashing work Gromit!",
+          "Superb effort, keep shining!",
+          "You're unstoppable!",
+          "What a triumph!",
+          "Amazing job, keep up the great work!",
+          "Incredible, you're a rockstar!",
+          "Sensational performance!",
+          "Your productivity is inspiring!",
+          "Mike, you F*cken LEGEND!!!",
+          "They said you'd never make it, but you finally came through!",
+          "You’re a wizard Harry!"
+        ]);
+        promptCounter = 4;
+        rewardCounter = 22;
+      }
+    }
+
+    function saveCategorySpecificData() {
+      try {
+        const currentCategory = categories[currentCategoryIndex];
+        const tasksData = {
+          stage: document.getElementById('stage')?.value || '',
+          date: document.getElementById('date')?.value || '',
+          due: document.getElementById('due')?.value || '',
+          time: document.getElementById('task-time')?.value || '',
+          notes: document.getElementById('task-notes')?.value || ''
+        };
+        const notesData = document.querySelector('#notes .notes-input')?.value || '';
+        const summaryData = document.querySelector('#summary .summary-input')?.value || '';
+        const categoryData = {
+          tasks: tasksData,
+          notes: notesData,
+          summary: summaryData
+        };
+        let categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
+        categorySpecificData[currentCategory] = categoryData;
+        localStorage.setItem('categorySpecificData', JSON.stringify(categorySpecificData));
+      } catch (e) {
+        console.error('Error saving category-specific data:', e);
+      }
+    }
+
+    function loadCategorySpecificData() {
+      try {
+        const currentCategory = categories[currentCategoryIndex];
+        const categorySpecificData = JSON.parse(localStorage.getItem('categorySpecificData')) || {};
+        const categoryData = categorySpecificData[currentCategory] || {};
+        const tasksData = categoryData.tasks || {
+          stage: "Scales",
+          date: formatDate(),
+          due: "TBC",
+          time: "",
+          notes: ""
+        };
+        const notesData = categoryData.notes || "";
+        const summaryData = categoryData.summary
