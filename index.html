@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Jiffy</title>
-  <link rel="manifest" href="/manifest.json?v=21">
+  <link rel="manifest" href="/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Jiffy">
-  <link rel="apple-touch-icon" href="/icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon.png">
   <meta name="theme-color" content="#000">
   <style>
     body {
@@ -129,22 +129,21 @@
       touch-action: pan-x;
       position: absolute;
       transform: translateX(0);
+      will-change: transform;
     }
     .tab.active {
       color: #fff;
       font-weight: bold;
-      display: inline-block;
       position: static;
+      z-index: 2;
     }
     .tab.transitioning-left {
-      display: inline-block;
-      color: #999;
       transform: translateX(-100%);
+      z-index: 1;
     }
     .tab.transitioning-right {
-      display: inline-block;
-      color: #999;
       transform: translateX(100%);
+      z-index: 1;
     }
     .tab-content-container {
       position: relative;
@@ -170,20 +169,22 @@
       transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0);
       box-sizing: border-box;
       touch-action: pan-x;
+      will-change: transform;
+      z-index: 1;
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
-      position: absolute;
       transform: translateX(0);
+      z-index: 2;
     }
     .tab-content.transitioning-left {
-      display: flex;
       transform: translateX(-100%);
+      z-index: 1;
     }
     .tab-content.transitioning-right {
-      display: flex;
       transform: translateX(100%);
+      z-index: 1;
     }
     .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
@@ -474,6 +475,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    Opaque elements should be placed on a single layer with a solid background color to prevent visual artifacts during transitions.
     .confirmation-buttons {
       display: flex;
       justify-content: center;
@@ -792,7 +794,6 @@
         const timeDelta = currentTime - lastTouchTime;
         const positionDelta = currentX - lastTouchX;
 
-        // Calculate velocity (pixels per second)
         if (timeDelta > 0) {
           swipeVelocity = positionDelta / (timeDelta / 1000);
         }
@@ -873,11 +874,10 @@
     function handleTabSwipe() {
       try {
         const viewportWidth = window.innerWidth;
-        const swipeThreshold = viewportWidth * 0.5; // 50% of viewport width
-        const velocityThreshold = 300; // Pixels per second for fast swipe
+        const swipeThreshold = viewportWidth * 0.5;
+        const velocityThreshold = 300;
         let nextTabIndex = currentTabIndex;
 
-        // Determine direction based on swipe distance or velocity
         const absDeltaX = Math.abs(tabTouchDeltaX);
         const absVelocity = Math.abs(swipeVelocity);
         if (absDeltaX > swipeThreshold || absVelocity > velocityThreshold) {
@@ -1357,16 +1357,17 @@
         const previousTabIndex = currentTabIndex;
         currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
         const direction = currentTabIndex > previousTabIndex ? 'left' : 'right';
-        
-        // Remove active and transitioning classes from all tabs and content
+
         document.querySelectorAll('.tab-content').forEach(content => {
           content.classList.remove('active', 'transitioning-left', 'transitioning-right');
           content.style.transform = direction === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
+          content.style.zIndex = '1';
         });
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active', 'transitioning-left', 'transitioning-right');
           tab.style.transform = direction === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
           tab.style.display = 'none';
+          tab.style.zIndex = '1';
         });
 
         const targetContent = document.getElementById(tabId);
@@ -1374,8 +1375,10 @@
         if (targetContent && targetTab) {
           targetContent.classList.add('active');
           targetContent.style.display = 'flex';
+          targetContent.style.zIndex = '2';
           targetTab.classList.add('active');
           targetTab.style.display = 'inline-block';
+          targetTab.style.zIndex = '2';
 
           if (previousTabIndex !== currentTabIndex) {
             const previousContent = document.getElementById(tabs[previousTabIndex].id);
@@ -1843,7 +1846,7 @@
         const summaryInput = document.querySelector('#summary .summary-input');
         if (stage) stage.addEventListener('input', saveCategorySpecificData);
         if (date) date.addEventListener('input', saveCategorySpecificData);
-        if (due) date.addEventListener('input', saveCategorySpecificData);
+        if (due) due.addEventListener('input', saveCategorySpecificData);
         if (taskTime) taskTime.addEventListener('input', saveCategorySpecificData);
         if (taskNotes) taskNotes.addEventListener('input', saveCategorySpecificData);
         if (notesInput) notesInput.addEventListener('input', saveCategorySpecificData);
