@@ -690,7 +690,7 @@
                 <circle class="timer-circle-bg" cx="100" cy="100" r="95"/>
                 <circle id="timer-circle-progress" class="timer-circle-progress" cx="100" cy="100" r="95" stroke-dasharray="596.9" stroke-dashoffset="0"/>
               </svg>
-              <div id="pb-timer" class="timer-display">00:00:00</div>
+              <div id="timer-display" class="timer-display">00:00:00</div>
             </div>
           </div>
         </div>
@@ -758,7 +758,8 @@
     let lastTouchX = 0;
     let swipeVelocity = 0;
     let lastUpdateTime = 0;
-    const throttleDelay = 16; // Approximately 60fps
+    let pendingFrame = null;
+    const throttleDelay = 20; // Slightly increased for smoother rendering
 
     function setupTabSwipe() {
       try {
@@ -782,6 +783,10 @@
       lastTouchTime = Date.now();
       lastUpdateTime = 0;
       isSwiping = true;
+      if (pendingFrame) {
+        cancelAnimationFrame(pendingFrame);
+        pendingFrame = null;
+      }
     }
 
     function handleTouchMove(e) {
@@ -803,13 +808,23 @@
         lastTouchTime = currentTime;
         lastUpdateTime = currentTime;
 
-        updateTabPosition();
+        if (pendingFrame) {
+          cancelAnimationFrame(pendingFrame);
+        }
+        pendingFrame = requestAnimationFrame(() => {
+          updateTabPosition();
+          pendingFrame = null;
+        });
       }
     }
 
     function handleTouchEnd(e) {
       if (isSwiping) {
         isSwiping = false;
+        if (pendingFrame) {
+          cancelAnimationFrame(pendingFrame);
+          pendingFrame = null;
+        }
         handleTabSwipe();
         resetTabPositions();
       }
@@ -1369,9 +1384,9 @@
               previousContent.style.display = 'flex';
               previousTab.style.display = 'inline-block';
               container.style.transform = direction === 'left' ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
-              setTimeout(() => {
+              requestAnimationFrame(() => {
                 container.style.transform = 'translate3d(0, 0, 0)';
-              }, 20);
+              });
             }
           } else {
             container.style.transform = 'translate3d(0, 0, 0)';
@@ -1496,7 +1511,7 @@
         const minutes = Math.floor((absSeconds % 3600) / 60);
         const seconds = absSeconds % 60;
         const timeStr = `${timer.seconds < 0 ? '-' : ''}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        const pbTimer = document.getElementById('pb-timer');
+        const pbTimer = document.getElementById('timer-display');
         if (pbTimer) pbTimer.textContent = timeStr;
       } catch (e) {
         console.error("Error in updateTimerDisplay:", e);
