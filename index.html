@@ -27,7 +27,7 @@
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
       box-sizing: border-box;
-      touch-action: pan-x;
+      touch-action: none;
     }
     .header {
       display: flex;
@@ -50,7 +50,7 @@
     }
     .header .category-name {
       display: inline-block;
-      touch-action: pan-x;
+      touch-action: none;
       max-width: 180px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -102,19 +102,17 @@
     .tabs-wrapper {
       position: relative;
       flex: 1;
-      overflow-x: hidden;
-      overflow-y: hidden;
-      touch-action: pan-x;
+      overflow: hidden;
       width: 100%;
       box-sizing: border-box;
+      touch-action: none;
     }
     .tabs-content-container {
       display: flex;
       flex-direction: column;
       width: 100%;
       height: 100%;
-      transform: translate3d(0, 0, 0);
-      transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0);
+      transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
       will-change: transform;
     }
     .tabs {
@@ -143,21 +141,25 @@
       font-size: 0.85rem;
       text-align: center;
       transition: color 0.3s ease-in-out;
-      touch-action: pan-x;
+      touch-action: none;
       position: absolute;
       z-index: 1;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: opacity 0.3s, transform 0.3s;
     }
     .tab.active {
       color: #fff;
       font-weight: bold;
       position: static;
       z-index: 2;
+      opacity: 1;
+      transform: translateX(0);
     }
     .tab-content-container {
       position: relative;
       flex: 1;
-      overflow-x: hidden;
-      overflow-y: hidden;
+      overflow: hidden;
       background-color: #1a1a1a;
       width: 100%;
       box-sizing: border-box;
@@ -173,13 +175,18 @@
       top: 0;
       left: 0;
       box-sizing: border-box;
-      touch-action: pan-x;
+      touch-action: pan-y;
       display: none;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: opacity 0.3s, transform 0.3s;
     }
     .tab-content.active {
       display: flex;
       flex-direction: column;
       z-index: 2;
+      opacity: 1;
+      transform: translateX(0);
     }
     .pb-details, .prompts-header, .rewards-header {
       background-color: #333;
@@ -311,7 +318,7 @@
       box-sizing: border-box;
       background-color: #222;
       color: #fff;
-      touch-action: pan-x;
+      touch-action: pan-y;
     }
     .prompts-header, .rewards-header {
       display: flex;
@@ -388,7 +395,7 @@
       background-color: #222;
       color: #fff;
       resize: none;
-      touch-action: pan-x;
+      touch-action: pan-y;
     }
     .reward-popup {
       display: none;
@@ -750,22 +757,25 @@
     ];
 
     // Tab swipe functionality
-    let tabTouchStartX = 0;
-    let tabTouchCurrentX = 0;
-    let tabTouchDeltaX = 0;
-    let isSwiping = false;
-    let lastTouchTime = 0;
-    let lastTouchX = 0;
-    let swipeVelocity = 0;
-    let lastUpdateTime = 0;
-    const throttleDelay = 16; // Approximately 60fps
+    let touchState = {
+      startX: 0,
+      currentX: 0,
+      deltaX: 0,
+      isSwiping: false,
+      lastTime: 0,
+      lastX: 0,
+      velocity: 0
+    };
+    const SWIPE_THRESHOLD = 0.3; // 30% of viewport width
+    const VELOCITY_THRESHOLD = 0.5; // pixels per millisecond
+    const ANIMATION_DURATION = 300; // ms
 
     function setupTabSwipe() {
       try {
         const tabsWrapper = document.querySelector('.tabs-wrapper');
         if (tabsWrapper) {
-          tabsWrapper.addEventListener('touchstart', handleTouchStart);
-          tabsWrapper.addEventListener('touchmove', handleTouchMove);
+          tabsWrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
+          tabsWrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
           tabsWrapper.addEventListener('touchend', handleTouchEnd);
         } else {
           console.error("tabs-wrapper not found");
@@ -776,111 +786,128 @@
     }
 
     function handleTouchStart(e) {
-      tabTouchStartX = e.changedTouches[0].screenX;
-      tabTouchCurrentX = tabTouchStartX;
-      lastTouchX = tabTouchStartX;
-      lastTouchTime = Date.now();
-      lastUpdateTime = 0;
-      isSwiping = true;
+      e.preventDefault();
+      touchState.startX = e.changedTouches[0].clientX;
+      touchState.currentX = touchState.startX;
+      touchState.lastX = touchState.startX;
+      touchState.lastTime = Date.now();
+      touchState.isSwiping = true;
+      prepareAdjacentTabs();
     }
 
     function handleTouchMove(e) {
-      if (isSwiping) {
-        const currentTime = Date.now();
-        if (currentTime - lastUpdateTime < throttleDelay) return;
-
-        const currentX = e.changedTouches[0].screenX;
-        const timeDelta = currentTime - lastTouchTime;
-        const positionDelta = currentX - lastTouchX;
-
-        if (timeDelta > 0) {
-          swipeVelocity = positionDelta / (timeDelta / 1000);
-        }
-
-        tabTouchCurrentX = currentX;
-        tabTouchDeltaX = tabTouchCurrentX - tabTouchStartX;
-        lastTouchX = currentX;
-        lastTouchTime = currentTime;
-        lastUpdateTime = currentTime;
-
-        updateTabPosition();
+      if (!touchState.isSwiping) return;
+      e.preventDefault();
+      
+      const currentTime = Date.now();
+      touchState.currentX = e.changedTouches[0].clientX;
+      touchState.deltaX = touchState.currentX - touchState.startX;
+      
+      // Calculate velocity
+      const timeDelta = currentTime - touchState.lastTime;
+      if (timeDelta > 0) {
+        touchState.velocity = (touchState.currentX - touchState.lastX) / timeDelta;
       }
+      
+      touchState.lastX = touchState.currentX;
+      touchState.lastTime = currentTime;
+      
+      updateTabPosition();
     }
 
     function handleTouchEnd(e) {
-      if (isSwiping) {
-        isSwiping = false;
-        handleTabSwipe();
-        resetTabPositions();
+      if (!touchState.isSwiping) return;
+      touchState.isSwiping = false;
+      
+      const viewportWidth = window.innerWidth;
+      const minSwipeDistance = viewportWidth * SWIPE_THRESHOLD;
+      const absDeltaX = Math.abs(touchState.deltaX);
+      const absVelocity = Math.abs(touchState.velocity);
+      
+      let nextTabIndex = currentTabIndex;
+      if (absDeltaX > minSwipeDistance || absVelocity > VELOCITY_THRESHOLD) {
+        if (touchState.deltaX < 0 && currentTabIndex < tabs.length - 1) {
+          nextTabIndex = currentTabIndex + 1;
+        } else if (touchState.deltaX > 0 && currentTabIndex > 0) {
+          nextTabIndex = currentTabIndex - 1;
+        }
+      }
+      
+      showTab(tabs[nextTabIndex].id);
+      touchState.deltaX = 0;
+    }
+
+    function prepareAdjacentTabs() {
+      const prevIndex = currentTabIndex > 0 ? currentTabIndex - 1 : null;
+      const nextIndex = currentTabIndex < tabs.length - 1 ? currentTabIndex + 1 : null;
+      
+      if (prevIndex !== null) {
+        const prevTab = document.querySelector(`.tab[data-tab="${tabs[prevIndex].id}"]`);
+        const prevContent = document.getElementById(tabs[prevIndex].id);
+        if (prevTab && prevContent) {
+          prevTab.style.transform = 'translateX(-100%)';
+          prevTab.style.opacity = '1';
+          prevContent.style.display = 'flex';
+          prevContent.style.transform = 'translateX(-100%)';
+          prevContent.style.opacity = '1';
+        }
+      }
+      
+      if (nextIndex !== null) {
+        const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextIndex].id}"]`);
+        const nextContent = document.getElementById(tabs[nextIndex].id);
+        if (nextTab && nextContent) {
+          nextTab.style.transform = 'translateX(100%)';
+          nextTab.style.opacity = '1';
+          nextContent.style.display = 'flex';
+          nextContent.style.transform = 'translateX(100%)';
+          nextContent.style.opacity = '1';
+        }
       }
     }
 
     function updateTabPosition() {
       try {
         const container = document.getElementById('tabsContentContainer');
-        const currentTab = document.querySelector(`.tab[data-tab="${tabs[currentTabIndex].id}"]`);
-        const nextTabIndex = tabTouchDeltaX < 0 ? (currentTabIndex + 1) % tabs.length : (currentTabIndex - 1 + tabs.length) % tabs.length;
-        const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextTabIndex].id}"]`);
-        const currentContent = document.getElementById(tabs[currentTabIndex].id);
-        const nextContent = document.getElementById(tabs[nextTabIndex].id);
-        if (container && currentTab && nextTab && currentContent && nextContent) {
-          const translatePercentage = (tabTouchDeltaX / window.innerWidth) * 100;
-          container.style.transition = 'none';
-          container.style.transform = `translate3d(${translatePercentage}%, 0, 0)`;
-          nextTab.style.display = 'inline-block';
-          nextContent.style.display = 'flex';
+        if (!container) return;
+        
+        const viewportWidth = window.innerWidth;
+        const translatePercentage = (touchState.deltaX / viewportWidth) * 100;
+        // Clamp the translation to prevent overshooting
+        const clampedPercentage = Math.max(-100, Math.min(100, translatePercentage));
+        
+        container.style.transition = 'none';
+        container.style.transform = `translate3d(${clampedPercentage}%, 0, 0)`;
+        
+        // Update adjacent tabs and contents
+        const prevIndex = currentTabIndex > 0 ? currentTabIndex - 1 : null;
+        const nextIndex = currentTabIndex < tabs.length - 1 ? currentTabIndex + 1 : null;
+        
+        if (prevIndex !== null) {
+          const prevTab = document.querySelector(`.tab[data-tab="${tabs[prevIndex].id}"]`);
+          const prevContent = document.getElementById(tabs[prevIndex].id);
+          if (prevTab && prevContent) {
+            const prevTranslate = -100 + clampedPercentage;
+            prevTab.style.transform = `translateX(${prevTranslate}%)`;
+            prevContent.style.transform = `translateX(${prevTranslate}%)`;
+            prevTab.style.opacity = Math.min(1, clampedPercentage / 100);
+            prevContent.style.opacity = Math.min(1, clampedPercentage / 100);
+          }
+        }
+        
+        if (nextIndex !== null) {
+          const nextTab = document.querySelector(`.tab[data-tab="${tabs[nextIndex].id}"]`);
+          const nextContent = document.getElementById(tabs[nextIndex].id);
+          if (nextTab && nextContent) {
+            const nextTranslate = 100 + clampedPercentage;
+            nextTab.style.transform = `translateX(${nextTranslate}%)`;
+            nextContent.style.transform = `translateX(${nextTranslate}%)`;
+            nextTab.style.opacity = Math.min(1, -clampedPercentage / 100);
+            nextContent.style.opacity = Math.min(1, -clampedPercentage / 100);
+          }
         }
       } catch (e) {
         console.error("Error in updateTabPosition:", e);
-      }
-    }
-
-    function resetTabPositions() {
-      try {
-        const container = document.getElementById('tabsContentContainer');
-        if (container) {
-          container.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)';
-          container.style.transform = 'translate3d(0, 0, 0)';
-        }
-        document.querySelectorAll('.tab').forEach(tab => {
-          if (!tab.classList.contains('active')) {
-            tab.style.display = 'none';
-          }
-        });
-        document.querySelectorAll('.tab-content').forEach(content => {
-          if (!content.classList.contains('active')) {
-            content.style.display = 'none';
-          }
-        });
-      } catch (e) {
-        console.error("Error in resetTabPositions:", e);
-      }
-    }
-
-    function handleTabSwipe() {
-      try {
-        const viewportWidth = window.innerWidth;
-        const swipeThreshold = viewportWidth * 0.5;
-        const velocityThreshold = 300;
-        let nextTabIndex = currentTabIndex;
-
-        const absDeltaX = Math.abs(tabTouchDeltaX);
-        const absVelocity = Math.abs(swipeVelocity);
-        if (absDeltaX > swipeThreshold || absVelocity > velocityThreshold) {
-          if (tabTouchDeltaX < 0) {
-            nextTabIndex = (currentTabIndex + 1) % tabs.length;
-          } else if (tabTouchDeltaX > 0) {
-            nextTabIndex = (currentTabIndex - 1 + tabs.length) % tabs.length;
-          }
-        }
-
-        if (nextTabIndex !== currentTabIndex) {
-          showTab(tabs[nextTabIndex].id);
-        } else {
-          resetTabPositions();
-        }
-      } catch (e) {
-        console.error("Error in handleTabSwipe:", e);
       }
     }
 
@@ -1090,7 +1117,7 @@
           "Sensational performance!",
           "Your productivity is inspiring!",
           "Mike, you F*cken LEGEND!!!",
-          "They said you'd never make it, but you finally came through!",
+          "They says you'd never make it, but you finally came through!",
           "You’re a wizard Harry!"
         ]);
         promptCounter = 4;
@@ -1240,7 +1267,7 @@
         if (container) {
           container.innerHTML = `
             <button onclick="removeCategory()">-</button>
-            <span id="category-header" class="category-name">${categories[currentCategoryIndex]}</span>
+            <span id="category-header"fet class="category-name">${categories[currentCategoryIndex]}</span>
             <button onclick="addCategory()">+</button>
           `;
           const newCategoryHeader = document.getElementById('category-header');
@@ -1342,44 +1369,46 @@
       try {
         const previousTabIndex = currentTabIndex;
         currentTabIndex = tabs.findIndex(tab => tab.id === tabId);
-        const direction = currentTabIndex > previousTabIndex ? 'left' : 'right';
-        const container = document.getElementById('tabsContentContainer');
-
-        document.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.remove('active');
-          content.style.display = 'none';
-        });
+        const direction = currentTabIndex > previousTabIndex ? 'right' : 'left';
+        
+        // Reset all tabs and contents
         document.querySelectorAll('.tab').forEach(tab => {
           tab.classList.remove('active');
-          tab.style.display = 'none';
+          tab.style.opacity = '0';
+          tab.style.transform = 'translateX(100%)';
+          if (tab.dataset.tab !== tabId) {
+            tab.style.display = 'none';
+          }
         });
-
-        const targetContent = document.getElementById(tabId);
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+          content.style.opacity = '0';
+          content.style.transform = 'translateX(100%)';
+          content.style.display = 'none';
+        });
+        
+        // Activate new tab and content
         const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
-        if (targetContent && targetTab) {
-          targetContent.classList.add('active');
-          targetContent.style.display = 'flex';
+        const targetContent = document.getElementById(tabId);
+        if (targetTab && targetContent) {
           targetTab.classList.add('active');
           targetTab.style.display = 'inline-block';
-
-          if (previousTabIndex !== currentTabIndex) {
-            const previousContent = document.getElementById(tabs[previousTabIndex].id);
-            const previousTab = document.querySelector(`.tab[data-tab="${tabs[previousTabIndex].id}"]`);
-            if (previousContent && previousTab) {
-              previousContent.style.display = 'flex';
-              previousTab.style.display = 'inline-block';
-              container.style.transform = direction === 'left' ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
-              setTimeout(() => {
-                container.style.transform = 'translate3d(0, 0, 0)';
-              }, 20);
-            }
-          } else {
-            container.style.transform = 'translate3d(0, 0, 0)';
-          }
-        } else {
-          console.error(`Tab or content not found for: ${tabId}`);
+          targetTab.style.opacity = '1';
+          targetTab.style.transform = 'translateX(0)';
+          
+          targetContent.classList.add('active');
+          targetContent.style.display = 'flex';
+          targetContent.style.opacity = '1';
+          targetContent.style.transform = 'translateX(0)';
         }
-
+        
+        // Animate container
+        const container = document.getElementById('tabsContentContainer');
+        if (container) {
+          container.style.transition = `transform ${ANIMATION_DURATION}ms cubic-bezier(0.4, 0.0, 0.2, 1)`;
+          container.style.transform = 'translate3d(0, 0, 0)';
+        }
+        
         if (tabId === 'pb') {
           updatePBDetails();
           resetTimer();
